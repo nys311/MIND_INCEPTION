@@ -3,7 +3,8 @@ services:
     build: .
     container_name: mi-lab
     ports:
-      - "9999:9999"
+      # host 9990 (the old reference demo already uses 9999)
+      - "9990:9999"
     environment:
       - PORT=9999
     # OPENROUTER_API_KEY is read from .env (this dir) or the project .env.
