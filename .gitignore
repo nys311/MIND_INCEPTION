@@ -1,0 +1,22 @@
+# secrets
+.env
+*.env
+!.env.example
+
+# the anonymous paper — never commit (under review)
+*.pdf
+11264_Harvested_Adversarial_Ne.pdf
+
+# python
+__pycache__/
+*.pyc
+*.pyo
+
+# captured model runs (regenerated at runtime; may trip host AV on clone)
+data/cache/*.json
+
+# generated reports
+reports/*.json
+reports/*.csv
+reports/*.html
+!reports/.gitkeep

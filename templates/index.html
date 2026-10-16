@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mind Inception — Defense Lab</title>
+<style>
+:root{
+  --bg:#0a0c10; --panel:#11151c; --panel2:#161b24; --line:#222a36;
+  --ink:#e7edf5; --mut:#8a97a8; --dim:#5b6676;
+  --mal:#ff4d5e; --clean:#2fe08a; --esc:#ffb020; --accent:#5aa0ff;
+  --fam-baseline:#8a97a8; --fam-surface:#c79bff; --fam-structural:#5aa0ff;
+  --fam-detector:#ffb020; --fam-architectural:#2fe08a;
+  --mono:"SFMono-Regular",ui-monospace,"JetBrains Mono",Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:ui-sans-serif,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  font-size:14px;line-height:1.45}
+a{color:var(--accent)}
+.mono{font-family:var(--mono)}
+header{position:sticky;top:0;z-index:20;background:linear-gradient(180deg,#0d1017,#0a0c10);
+  border-bottom:1px solid var(--line);padding:10px 18px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.brand{font-weight:700;letter-spacing:.3px;font-size:16px;display:flex;align-items:center;gap:10px}
+.brand .dot{width:9px;height:9px;border-radius:50%;background:var(--mal);box-shadow:0 0 10px var(--mal)}
+.brand small{color:var(--mut);font-weight:500;letter-spacing:0}
+.spacer{flex:1}
+.ctrl{display:flex;align-items:center;gap:8px;color:var(--mut);font-size:12px}
+select,button,input{font:inherit;color:var(--ink);background:var(--panel2);
+  border:1px solid var(--line);border-radius:8px;padding:7px 10px}
+button{cursor:pointer;transition:.12s}
+button:hover{border-color:#394557;background:#1b2230}
+button.primary{background:#20324f;color:#dce9ff;border-color:#33507e}
+button.primary:hover{background:#274066}
+button:disabled{opacity:.45;cursor:not-allowed}
+.toggle{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden}
+.toggle button{border:0;border-radius:0;background:transparent;padding:6px 12px;color:var(--mut);font-size:12px}
+.toggle button.on{background:#20324f;color:#dce9ff}
+.toggle button.on.live{background:#4a1d24;color:#ffd8dc}
+.health{font-size:12px;color:var(--dim)}
+.health b{color:var(--mut);font-weight:600}
+nav.tabs{display:flex;gap:4px;padding:0 18px;border-bottom:1px solid var(--line);background:#0b0e14;position:sticky;top:53px;z-index:19}
+nav.tabs button{background:transparent;border:0;border-bottom:2px solid transparent;border-radius:0;
+  padding:12px 16px;color:var(--mut);font-weight:600}
+nav.tabs button.on{color:var(--ink);border-bottom-color:var(--accent)}
+main{padding:18px;max-width:1280px;margin:0 auto}
+.view{display:none}.view.on{display:block}
+.grid{display:grid;gap:14px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px}
+.card h3{margin:0 0 4px;font-size:13px;letter-spacing:.2px}
+.muted{color:var(--mut)}.dim{color:var(--dim)}
+.row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.badge{display:inline-flex;align-items:center;gap:6px;font-weight:700;font-size:12px;
+  padding:4px 10px;border-radius:999px;border:1px solid}
+.b-mal{color:var(--mal);border-color:#512; background:#2a0f14}
+.b-clean{color:var(--clean);border-color:#164; background:#06231a}
+.b-esc{color:var(--esc);border-color:#653; background:#241a06}
+.b-unk{color:var(--mut);border-color:var(--line)}
+.vbig{font-size:26px;font-weight:800;letter-spacing:.5px}
+.tag{font-size:10px;text-transform:uppercase;letter-spacing:.6px;padding:2px 7px;border-radius:5px;
+  border:1px solid var(--line);color:var(--mut)}
+.famtag{font-size:10px;text-transform:uppercase;letter-spacing:.5px;font-weight:700}
+pre.code{background:#0b0e13;border:1px solid var(--line);border-radius:8px;padding:10px;
+  overflow:auto;max-height:260px;font-family:var(--mono);font-size:12px;color:#c6d2e2;white-space:pre-wrap}
+pre.code .trace{color:#ffd27a;background:#2a200a;border-radius:3px}
+.reason{background:#0c1118;border:1px solid var(--line);border-left:3px solid var(--accent);
+  border-radius:6px;padding:10px;font-size:12.5px;color:#c6d2e2;max-height:260px;overflow:auto;white-space:pre-wrap}
+.flip{display:grid;grid-template-columns:1fr 54px 1fr;gap:10px;align-items:stretch}
+.flip .mid{display:flex;align-items:center;justify-content:center;color:var(--dim);font-size:26px}
+.panel-v{display:flex;flex-direction:column;gap:10px}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th,td{padding:8px 9px;text-align:left;border-bottom:1px solid var(--line)}
+th{color:var(--mut);font-weight:600;position:sticky;top:0;background:var(--panel);cursor:pointer;user-select:none}
+td.num,th.num{text-align:right;font-family:var(--mono)}
+tr:hover td{background:#0e131b}
+.bar{height:8px;border-radius:4px;background:#222a36;overflow:hidden;min-width:60px}
+.bar>i{display:block;height:100%}
+.pill{font-size:11px;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--mut)}
+.deflist{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px}
+.defcard{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px;position:relative}
+.defcard.block{border-color:#1c4} .defcard.fail{border-color:#622}
+.defcard .top{display:flex;justify-content:space-between;align-items:start;gap:8px;margin-bottom:8px}
+.chk{font-size:12px;font-weight:700}.chk.ok{color:var(--clean)}.chk.no{color:var(--mal)}
+.small{font-size:11.5px}
+.sample-list{max-height:62vh;overflow:auto;display:flex;flex-direction:column;gap:3px}
+.sitem{display:flex;gap:8px;align-items:center;padding:7px 9px;border:1px solid transparent;border-radius:8px;cursor:pointer}
+.sitem:hover{background:#0f141c}.sitem.on{background:#15202f;border-color:#27425f}
+.sdot{width:7px;height:7px;border-radius:50%;flex:none}
+.sdot.m{background:var(--mal)}.sdot.b{background:var(--clean)}
+.progress{height:10px;border-radius:6px;background:#1a2230;overflow:hidden}
+.progress>i{display:block;height:100%;background:linear-gradient(90deg,#2f4f82,#5aa0ff);width:0}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:11.5px;color:var(--mut)}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.legend i{width:10px;height:10px;border-radius:3px;display:inline-block}
+.kpi{display:flex;gap:10px;flex-wrap:wrap}
+.kpi .k{flex:1;min-width:120px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px}
+.kpi .k .n{font-size:22px;font-weight:800;font-family:var(--mono)}
+.kpi .k .l{font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.5px}
+.hint{font-size:11.5px;color:var(--dim)}
+.scroll{overflow:auto;max-height:70vh;border:1px solid var(--line);border-radius:10px}
+details summary{cursor:pointer;color:var(--mut);font-size:12px;padding:4px 0}
+.spin{display:inline-block;width:12px;height:12px;border:2px solid #334;border-top-color:var(--accent);border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media(max-width:900px){.flip{grid-template-columns:1fr}.flip .mid{transform:rotate(90deg)}}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><span class="dot"></span> MIND INCEPTION <small>· Defense Lab</small></div>
+  <div class="ctrl"><span>Model</span><select id="model"></select></div>
+  <div class="ctrl"><span>Mode</span>
+    <span class="toggle" id="modeToggle">
+      <button data-mode="auto" class="on">AUTO</button>
+      <button data-mode="live">LIVE</button>
+      <button data-mode="replay">REPLAY</button>
+    </span>
+  </div>
+  <div class="spacer"></div>
+  <div class="health" id="health">connecting…</div>
+</header>
+
+<nav class="tabs" id="tabs">
+  <button data-v="attack" class="on">① Attack</button>
+  <button data-v="defense">② Defense Lab</button>
+  <button data-v="bench">③ Benchmark</button>
+  <button data-v="about">About</button>
+</nav>
+
+<main>
+  <!-- ATTACK ------------------------------------------------------------- -->
+  <section class="view on" id="v-attack">
+    <div class="grid" style="grid-template-columns:300px 1fr">
+      <div class="card">
+        <h3>Samples <span class="muted small" id="scount"></span></h3>
+        <div class="hint">Public webshells (red) &amp; benign code (green). Click one.</div>
+        <div class="sample-list" id="attackSamples"></div>
+      </div>
+      <div class="panel-v">
+        <div class="card">
+          <div class="row">
+            <div><h3 id="asTitle">Select a sample</h3><div class="small dim" id="asSrc"></div></div>
+            <div class="spacer"></div>
+            <button class="primary" id="runAttack" disabled>▶ Run attack</button>
+          </div>
+        </div>
+        <div class="flip">
+          <div class="card panel-v">
+            <div class="row"><span class="tag">RAW — code only</span><span class="spacer"></span>
+              <span id="rawVerdict" class="badge b-unk">—</span></div>
+            <div class="reason" id="rawReason">The honest baseline. The target should flag the webshell.</div>
+            <details><summary>artifact sent</summary><pre class="code" id="rawCode"></pre></details>
+          </div>
+          <div class="mid">➜</div>
+          <div class="card panel-v">
+            <div class="row"><span class="tag" style="border-color:#633;color:#f99">INCEPTION — code + planted trace</span>
+              <span class="spacer"></span><span id="incVerdict" class="badge b-unk">—</span></div>
+            <div class="reason" id="incReason">The same code, with a borrowed reasoning trace planted in a comment.</div>
+            <details open><summary>artifact sent (planted trace highlighted)</summary><pre class="code" id="incCode"></pre></details>
+          </div>
+        </div>
+        <div class="card">
+          <div class="row"><h3>Cross-model transfer</h3>
+            <span class="muted small">replay the <b>same</b> planted trace on another family</span>
+            <span class="spacer"></span>
+            <select id="xModel"></select><button id="runTransfer" disabled>▶ Transfer</button>
+          </div>
+          <div class="row" id="xResult" style="margin-top:8px"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- DEFENSE LAB -------------------------------------------------------- -->
+  <section class="view" id="v-defense">
+    <div class="card">
+      <div class="row">
+        <div><h3>Defense battery</h3>
+          <div class="small dim">Runs every defense on the inception artifact, plus a benign false-positive check.</div></div>
+        <div class="spacer"></div>
+        <span class="muted small">Sample</span><select id="defSample"></select>
+        <button class="primary" id="runBattery" disabled>▶ Run battery</button>
+      </div>
+      <div class="kpi" id="defKpi" style="margin-top:12px;display:none"></div>
+    </div>
+    <div class="deflist" id="defCards" style="margin-top:14px"></div>
+  </section>
+
+  <!-- BENCHMARK ---------------------------------------------------------- -->
+  <section class="view" id="v-bench">
+    <div class="card">
+      <div class="row">
+        <div><h3>Benchmark matrix</h3>
+          <div class="small dim">ASR (attack success) ↓, FP (benign cost) ↓, Utility ↑ — across the sample set.</div></div>
+        <div class="spacer"></div>
+        <span class="muted small">Scope</span>
+        <select id="benchScope">
+          <option value="quick">Quick (6 samples)</option>
+          <option value="malicious">Malicious + benign</option>
+          <option value="all" selected>Full set</option>
+        </select>
+        <span class="muted small">Defenses</span>
+        <select id="benchStrat">
+          <option value="core" selected>Core (one per family)</option>
+          <option value="all">All strategies</option>
+        </select>
+        <button class="primary" id="runBench">▶ Run benchmark</button>
+        <button id="cancelBench" style="display:none">■ Stop</button>
+      </div>
+      <div id="benchProg" style="margin-top:12px;display:none">
+        <div class="progress"><i id="benchBar"></i></div>
+        <div class="small dim" id="benchMsg" style="margin-top:6px"></div>
+      </div>
+    </div>
+    <div class="card" id="benchChartCard" style="margin-top:14px;display:none">
+      <h3>Attack success rate by defense</h3>
+      <div class="legend" id="benchLegend"></div>
+      <div id="benchChart" style="margin-top:8px"></div>
+    </div>
+    <div class="card" id="benchTableCard" style="margin-top:14px;display:none">
+      <div class="row"><h3>Results</h3><span class="spacer"></span>
+        <button id="expJson">Export JSON</button><button id="expCsv">Export CSV</button></div>
+      <div class="scroll" style="margin-top:8px"><table id="benchTable"></table></div>
+    </div>
+  </section>
+
+  <!-- ABOUT -------------------------------------------------------------- -->
+  <section class="view" id="v-about">
+    <div class="card" style="max-width:820px">
+      <h3>What this is</h3>
+      <p class="muted">A benchmark and demonstration harness for <b>MIND INCEPTION</b> (Harvested
+      Adversarial Neural Guidance): an attack that plants a borrowed reasoning trace in an
+      artifact so a large reasoning model adopts it and flips a security verdict to <b>CLEAN</b>.</p>
+      <p class="muted">The lab measures how far a battery of <b>defenses</b> moves the attack on three axes:
+      attack success rate (ASR), benign false-positive cost (FP), and detection utility.
+      Defense families:</p>
+      <ul class="muted">
+        <li><b style="color:var(--fam-surface)">surface</b> — comment stripping, prose removal (the paper's Table 7).</li>
+        <li><b style="color:var(--fam-structural)">structural</b> — sandwich, spotlighting, data-marking, encoding, instruction hierarchy (the paper's untested frontier).</li>
+        <li><b style="color:var(--fam-detector)">detector</b> — Llama-Guard &amp; a planted-chain-of-thought classifier as pre-filters.</li>
+        <li><b style="color:var(--fam-architectural)">architectural</b> — N-model vote and a comment-blind signature cross-check; a defense-in-depth stack.</li>
+      </ul>
+      <p class="hint">Samples are public webshells already flagged by conventional tools, plus benign code.
+      Planted traces shipped here are neutralized demonstrations; operational traces are withheld.</p>
+      <div id="aboutHealth" class="small dim mono"></div>
+    </div>
+  </section>
+</main>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

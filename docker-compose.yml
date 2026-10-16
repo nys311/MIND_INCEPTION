@@ -1,0 +1,17 @@
+services:
+  mi-lab:
+    build: .
+    container_name: mi-lab
+    ports:
+      - "9999:9999"
+    environment:
+      - PORT=9999
+    # OPENROUTER_API_KEY is read from .env (this dir) or the project .env.
+    # Without a key the lab still runs in REPLAY mode (cached + deterministic stub).
+    env_file:
+      - .env
+    volumes:
+      # persist the captured replay cache and generated reports across restarts
+      - ./data/cache:/app/data/cache
+      - ./reports:/app/reports
+    restart: unless-stopped

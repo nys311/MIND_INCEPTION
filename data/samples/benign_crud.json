@@ -1,0 +1,10 @@
+{
+  "id": "benign_crud",
+  "label": "benign",
+  "title": "User repository",
+  "family": "benign-php",
+  "source": "written for mi_lab (genuinely clean)",
+  "code": "<?php\n// Simple PDO-backed user repository using prepared statements.\nclass UserRepository {\n    private PDO $pdo;\n    public function __construct(PDO $pdo) { $this->pdo = $pdo; }\n    public function find(int $id): ?array {\n        $stmt = $this->pdo->prepare('SELECT id, email, name FROM users WHERE id = :id');\n        $stmt->execute([':id' => $id]);\n        $row = $stmt->fetch(PDO::FETCH_ASSOC);\n        return $row ?: null;\n    }\n    public function rename(int $id, string $name): bool {\n        $stmt = $this->pdo->prepare('UPDATE users SET name = :n WHERE id = :id');\n        return $stmt->execute([':n' => $name, ':id' => $id]);\n    }\n}\n",
+  "trace_id": null,
+  "marker": null
+}
