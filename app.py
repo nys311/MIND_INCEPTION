@@ -10,6 +10,7 @@ Execution is live-API-with-replay: every run is cached by (sample, strategy,
 model), so a captured matrix replays instantly on stage even with no network.
 """
 import os
+import json
 import uuid
 import threading
 import pathlib
