@@ -30,6 +30,11 @@ BASE = pathlib.Path(__file__).resolve().parent
 # Static metadata
 # ---------------------------------------------------------------------------
 @app.route("/")
+@app.route("/overview")
+@app.route("/attack")
+@app.route("/lab")
+@app.route("/benchmark")
+@app.route("/about")
 def index():
     return render_template("index.html")
 
@@ -40,7 +45,8 @@ def defense_page():
 
 
 @app.route("/demo")
-def demo_page():
+@app.route("/demo/<case>")
+def demo_page(case=None):
     return render_template("demo.html")
 
 
@@ -88,6 +94,7 @@ USECASES = [
      "impact": "The agent executes attacker-supplied code via repo_browser.run — "
                "arbitrary code execution from the simplest benign framing.",
      "defense": "defense_in_depth",
+     "bg": "/static/usecases/cute_rats.png",
      "image": "/static/kaggle/gptoss_tooluse.png",
      "source": "From our Kaggle GPT-OSS-20B red-teaming writeup (GPT-OSS-20B, llama.cpp)",
      "link": "https://www.kaggle.com/competitions/openai-gpt-oss-20b-red-teaming/writeups/"
@@ -124,6 +131,17 @@ def samples_download():
     return Response(json.dumps(bundle, ensure_ascii=False, indent=2),
                     mimetype="application/json",
                     headers={"Content-Disposition": "attachment; filename=mi_lab_samples.json"})
+
+
+@app.route("/api/transfer_stats")
+def transfer_stats():
+    p = BASE / "data" / "transfer_stats.json"
+    if not p.is_file():
+        return jsonify({"available": False})
+    try:
+        return jsonify({"available": True, **json.loads(p.read_text())})
+    except Exception:
+        return jsonify({"available": False})
 
 
 @app.route("/api/defense_stats")

@@ -41,12 +41,12 @@ function highlightTrace(code){
 
 // ---------------------------------------------------------------- boot
 async function boot(){
-  const [h, mo, st, sa, ds] = await Promise.all([
+  const [h, mo, st, sa, ds, tr] = await Promise.all([
     api("/api/health"), api("/api/models"), api("/api/strategies"),
-    api("/api/samples"), api("/api/defense_stats")]);
+    api("/api/samples"), api("/api/defense_stats"), api("/api/transfer_stats")]);
   state.models = mo.models; state.voteModels = mo.vote_models;
   state.strategies = st.strategies; state.families = st.families;
-  state.samples = sa.samples; state.stats = ds;
+  state.samples = sa.samples; state.stats = ds; state.transfer = tr;
 
   state.model = state.models[0];
   const fillModels = () => {
@@ -72,8 +72,8 @@ async function boot(){
   wireAttack(); wireDefense(); wireBench();
 
   // step bar -> jump to tab
-  $$("#stepbar .stp").forEach(s => s.onclick = () => { activateTab(s.dataset.go); history.replaceState(null,"","#"+s.dataset.go); });
-  $$("#stepbar .stp").forEach(s => s.classList.toggle("on", s.dataset.go === "overview"));
+  $$("#stepbar .stp").forEach(s => s.onclick = () => activateTab(s.dataset.go));
+  $$("#stepbar .stp").forEach(s => s.classList.toggle("on", s.dataset.go === tabFromPath()));
   // download samples
   const dl = $("#dlSamples"); if (dl) dl.onclick = () => window.open("/api/samples/download", "_blank");
 }
@@ -135,6 +135,32 @@ function renderOverview(){
     `<div class="row" style="justify-content:space-between;border-bottom:1px solid var(--line);padding:6px 0">
        <span class="mono">${esc(f)}</span>
        <span class="small"><b style="color:var(--mal)">${c.m}</b> malicious · <b style="color:var(--clean)">${c.b}</b> benign</span></div>`).join("");
+
+  renderTransfer();
+}
+
+function renderTransfer(){
+  const t = state.transfer;
+  if (!t || !t.available || !t.targets){ return; }
+  $("#ovTransfer").style.display = "block";
+  $("#ovTransferMeta").textContent =
+    `one trace from ${t.source_model} · ${t.trace_len} chars · planted into ${t.n_webshells} webshells`
+    + (t.neutralized_trace ? " · neutralized trace" : "");
+  const entries = Object.entries(t.targets);
+  const W=640, lab=250, h=entries.length*26+6;
+  let svg=`<svg viewBox="0 0 ${W} ${h}" width="100%" style="font:12px var(--mono)">`;
+  entries.forEach(([m,r],i)=>{
+    const y=i*26+5, asr=r.asr||0, bw=(W-lab-70)*asr;
+    const src = m.includes(t.source_model) || t.source_model.includes(m.split("/").pop());
+    const col = src ? "var(--fam-baseline)" : "var(--mal)";
+    svg+=`<text x="0" y="${y+13}" fill="#cfd8e6">${esc(m)}${src?" (source)":""}</text>`;
+    svg+=`<rect x="${lab}" y="${y+2}" width="${W-lab-70}" height="14" fill="#1a2230" rx="3"/>`;
+    svg+=`<rect x="${lab}" y="${y+2}" width="${Math.max(2,bw)}" height="14" fill="${col}" rx="3"/>`;
+    svg+=`<text x="${W-62}" y="${y+13}" fill="#cfd8e6">${pctO(r.asr)}</text>`;
+  });
+  svg+="</svg>";
+  $("#ovTransferBars").innerHTML = svg
+    + `<div class="hint" style="margin-top:6px">The same trace, replayed unchanged, flips models from other families — the attacker needn't know which model is deployed.</div>`;
 }
 
 function renderHealth(h){
@@ -155,20 +181,23 @@ function renderModeToggle(){
   });
 }
 
-function activateTab(v){
+const TAB_PATH = {overview:"/", attack:"/attack", defense:"/lab", bench:"/benchmark", about:"/about"};
+const PATH_TAB = {"/":"overview","/overview":"overview","/attack":"attack","/lab":"defense","/benchmark":"bench","/about":"about"};
+function tabFromPath(){ return PATH_TAB[location.pathname] || "overview"; }
+function activateTab(v, push=true){
   const btn = $(`#tabs button[data-v="${v}"]`); if(!btn) return;
   $$("#tabs button").forEach(x => x.classList.remove("on")); btn.classList.add("on");
   $$(".view").forEach(s => s.classList.remove("on"));
   const view = $(`#v-${v}`); if(view) view.classList.add("on");
   $$("#stepbar .stp").forEach(s => s.classList.toggle("on", s.dataset.go === v));
+  if (push && TAB_PATH[v] && location.pathname !== TAB_PATH[v])
+    history.pushState({v}, "", TAB_PATH[v]);
   window.scrollTo({top:0, behavior:"smooth"});
 }
 function renderTabs(){
-  $$("#tabs button").forEach(b => b.onclick = () => {
-    activateTab(b.dataset.v); history.replaceState(null,"","#"+b.dataset.v);
-  });
-  const h = (location.hash||"").replace("#","");
-  if (h && $(`#tabs button[data-v="${h}"]`)) activateTab(h);
+  $$("#tabs button").forEach(b => b.onclick = () => activateTab(b.dataset.v));
+  window.addEventListener("popstate", () => activateTab(tabFromPath(), false));
+  activateTab(tabFromPath(), false);
 }
 
 // ---------------------------------------------------------------- attack (4-phase)

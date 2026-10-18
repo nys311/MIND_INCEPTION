@@ -44,7 +44,8 @@ async function boot() {
 
 function renderCards() {
   $("#cards").innerHTML = S.usecases.map(u => `
-    <div class="usecard" data-id="${u.id}">
+    <div class="usecard ${u.bg ? "hasbg" : ""}" data-id="${u.id}"
+      style="${u.bg ? `--cardbg:url('${u.bg}')` : `--tint:${u.color}`}">
       <div class="uctop" style="background:${u.color}"></div>
       <div class="ucbody">
         <div class="row" style="gap:8px">
@@ -57,15 +58,19 @@ function renderCards() {
       </div>
     </div>`).join("");
   $$(".usecard").forEach(el => el.onclick = () => openCase(el.dataset.id));
-  const h = (location.hash || "").replace("#", "");
-  if (h && S.usecases.some(u => u.id === h)) openCase(h);
+  const seg = decodeURIComponent((location.pathname.split("/")[2] || ""));
+  if (seg && S.usecases.some(u => u.id === seg)) openCase(seg, false);
+  window.addEventListener("popstate", () => {
+    const s = decodeURIComponent((location.pathname.split("/")[2] || ""));
+    if (s && S.usecases.some(u => u.id === s)) openCase(s, false);
+  });
 }
 
-async function openCase(id) {
+async function openCase(id, push = true) {
   const u = S.usecases.find(x => x.id === id);
   if (!u) return;
   S.current = u;
-  history.replaceState(null, "", "#" + id);
+  if (push && location.pathname !== "/demo/" + id) history.pushState({ id }, "", "/demo/" + id);
   const def = S.strategies[u.defense] || { label: u.defense };
   $("#detail").innerHTML = `
     <div class="card">

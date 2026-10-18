@@ -86,6 +86,57 @@ function renderTable() {
   $("#tbl").innerHTML = head + `<tbody>${body}</tbody>`;
 }
 
+// --- per-family mechanism diagram (inline SVG) ---
+function famDiagram(fam) {
+  const C = FAMCOL[fam] || "#888";
+  const box = (x, y, w, h, label, fill, stroke, sub) =>
+    `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="7" fill="${fill || "#121823"}" stroke="${stroke || "#2b3647"}"/>`
+    + `<text x="${x + w / 2}" y="${y + (sub ? h / 2 - 3 : h / 2 + 4)}" fill="#dce7f5" font-size="12" font-weight="600" text-anchor="middle">${label}</text>`
+    + (sub ? `<text x="${x + w / 2}" y="${y + h / 2 + 12}" fill="#8a97a8" font-size="10" text-anchor="middle">${sub}</text>` : "");
+  const arrow = (x1, y, x2) =>
+    `<line x1="${x1}" y1="${y}" x2="${x2 - 7}" y2="${y}" stroke="#46566b" stroke-width="2"/>`
+    + `<path d="M${x2 - 8},${y - 4} L${x2},${y} L${x2 - 8},${y + 4} Z" fill="#46566b"/>`;
+  const W = 620, H = 108;
+  let g = "";
+  const trace = `<tspan fill="#ffd27a">⟂trace</tspan>`;
+  if (fam === "baseline") {
+    g = box(10, 38, 150, 34, "Artifact + trace", "#1b1507", "#5a4a1e")
+      + arrow(160, 55, 250) + box(250, 38, 120, 34, "LRM")
+      + arrow(370, 55, 460) + box(460, 38, 150, 34, "Verdict: CLEAN", "#2a0f14", "#512")
+      + `<text x="10" y="92" fill="#8a97a8" font-size="11">planted trace flows straight into the model → it adopts it</text>`;
+  } else if (fam === "surface") {
+    g = box(10, 38, 140, 34, "Artifact + trace", "#1b1507", "#5a4a1e")
+      + arrow(150, 55, 230) + box(230, 34, 120, 42, "✂ sanitize", "#1a1226", "#43306a", "strip comments/prose")
+      + arrow(350, 55, 430) + box(430, 38, 90, 34, "LRM")
+      + arrow(520, 55, 590) + box(590, 38, 20, 34, "✓", "#06231a", "#164")
+      + `<text x="10" y="96" fill="#8a97a8" font-size="11">removes the text the trace hides in — but relocation (print/echo) can survive</text>`;
+  } else if (fam === "structural") {
+    g = `<rect x="10" y="20" width="150" height="70" rx="7" fill="none" stroke="${C}" stroke-dasharray="4 3"/>`
+      + `<text x="85" y="16" fill="${C}" font-size="10" text-anchor="middle">⟦ fenced data ⟧</text>`
+      + box(20, 44, 130, 34, "Artifact + trace", "#1b1507", "#5a4a1e")
+      + box(10, 94, 150, 0, "", "", "")
+      + arrow(170, 55, 250) + box(250, 30, 130, 50, "LRM", "#121823", "#2b3647", "+ system: data≠thoughts")
+      + arrow(380, 55, 470) + box(470, 38, 140, 34, "Verdict: MALICIOUS", "#2a0f14", "#512")
+      + `<text x="10" y="104" fill="#8a97a8" font-size="11">isolates untrusted data from instructions → planted reasoning has no authority</text>`;
+  } else if (fam === "detector") {
+    g = box(10, 38, 130, 34, "Artifact + trace", "#1b1507", "#5a4a1e")
+      + arrow(140, 55, 220) + box(220, 32, 120, 46, "🔍 detector", "#241a06", "#653", "planted-CoT / guard")
+      + `<path d="M340,55 L400,30" stroke="#46566b" stroke-width="2"/><path d="M340,55 L400,80" stroke="#46566b" stroke-width="2"/>`
+      + box(405, 14, 110, 30, "flag → BLOCK", "#2a0f14", "#512")
+      + box(405, 66, 110, 30, "clear → LRM", "#06231a", "#164")
+      + `<text x="10" y="104" fill="#8a97a8" font-size="11">gate the artifact before the model; block anything that reads like an injected trace</text>`;
+  } else { // architectural
+    g = box(10, 38, 120, 34, "Artifact + trace", "#1b1507", "#5a4a1e")
+      + `<path d="M130,55 L200,32" stroke="#46566b" stroke-width="2"/><path d="M130,55 L200,80" stroke="#46566b" stroke-width="2"/>`
+      + box(200, 18, 150, 30, "LRM (may be fooled)", "#121823", "#2b3647")
+      + box(200, 66, 180, 30, "non-LLM scan / N-model vote", "#06231a", "#1c4a33")
+      + arrow(385, 60, 450) + box(450, 44, 90, 34, "combine", "#1a2a1f", "#2f6b4a")
+      + arrow(540, 60, 600) + box(600, 44, 14, 34, "✓", "#06231a", "#164")
+      + `<text x="10" y="104" fill="#8a97a8" font-size="11">cross-check the LRM with a signature scan / other models; disagreement → override/escalate</text>`;
+  }
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" style="max-width:640px;font-family:var(--mono)">${g}</svg>`;
+}
+
 function renderFamilies() {
   const host = $("#families");
   host.innerHTML = STATE.families.map(fam => {
@@ -102,7 +153,8 @@ function renderFamilies() {
         <div class="small muted" style="margin:4px 0">${esc(s.desc)}</div>
         <div class="hint">expected: ${esc(s.expect || "")}</div>${num}</div>`;
     }).join("");
-    return `<h3 style="color:${FAMCOL[fam]};margin:16px 0 8px;text-transform:capitalize">${fam}</h3>
+    return `<h3 style="color:${FAMCOL[fam]};margin:18px 0 8px;text-transform:capitalize">${fam} defenses</h3>
+      <div class="card" style="margin-bottom:10px">${famDiagram(fam)}</div>
       <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(300px,1fr))">${cards}</div>`;
   }).join("");
 }
