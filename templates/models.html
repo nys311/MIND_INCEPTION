@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Models & API key — MIND INCEPTION Defense Lab</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header>
+  <div class="brand"><span class="dot"></span> MIND INCEPTION <small>· Defense Lab</small></div>
+  <nav class="sitenav">
+    <a href="/">Dashboard</a>
+    <a href="/demo">Use Cases</a>
+    <a href="/defense">Defenses</a>
+    <a href="/models" class="on">Models</a>
+  </nav>
+  <div class="spacer"></div>
+  <div class="health" id="health"></div>
+</header>
+
+<main style="max-width:760px">
+  <div class="card">
+    <h3>Test other models</h3>
+    <p class="muted" style="margin:6px 0">Paste your own OpenRouter API key and add any
+    model id to make the whole lab (Attack · Defense Lab · Benchmark · Use Cases) run
+    live against those models. Everything here is stored <b>only in this browser</b>
+    (localStorage) and sent to the local lab server solely to make the call — never
+    logged or saved to disk.</p>
+  </div>
+
+  <div class="card" style="margin-top:14px">
+    <h3>OpenRouter API key</h3>
+    <div class="small dim" id="keyState" style="margin:6px 0"></div>
+    <div class="row" style="gap:8px">
+      <input type="password" id="keyInput" placeholder="sk-or-v1-…  (leave blank to use the server key)" style="flex:1">
+      <button class="primary" id="keySave">Save key</button>
+      <button id="keyClear">Clear</button>
+    </div>
+    <div class="hint" style="margin-top:8px">Without a key the lab uses the server's key
+    (if configured) or REPLAY mode. Get a key at openrouter.ai/keys.</div>
+  </div>
+
+  <div class="card" style="margin-top:14px">
+    <h3>Custom models</h3>
+    <div class="small muted" style="margin:6px 0">Add any OpenRouter model id — it appears
+    in every model picker. Examples:
+      <code>anthropic/claude-3.7-sonnet</code>, <code>deepseek/deepseek-v4.1-flash</code>,
+      <code>x-ai/grok-4-fast</code>, <code>google/gemini-2.5-pro</code>.</div>
+    <div class="row" style="gap:8px">
+      <input id="modelInput" placeholder="vendor/model-id" style="flex:1">
+      <button id="modelAdd">Add model</button>
+    </div>
+    <div class="mchips" id="chips" style="margin-top:10px"></div>
+    <div class="small dim" style="margin-top:8px">Built-in models are always available; these are added on top.</div>
+  </div>
+
+  <div class="card" style="margin-top:14px">
+    <div class="row"><span class="small muted">Changes apply immediately across the app.</span>
+      <span class="spacer"></span><span class="small" id="savedMsg"></span>
+      <a href="/" class="apibtn">← Back to dashboard</a></div>
+  </div>
+</main>
+
+<script>
+"use strict";
+const $ = s => document.querySelector(s);
+const LS_KEY = "milab_api_key", LS_MODELS = "milab_models";
+const read = (k) => { try { return localStorage.getItem(k) || ""; } catch { return ""; } };
+const write = (k, v) => { try { localStorage.setItem(k, v); } catch {} };
+let models = read(LS_MODELS).split(",").map(s => s.trim()).filter(Boolean);
+
+function keyState() {
+  const set = !!read(LS_KEY);
+  $("#keyState").innerHTML = set
+    ? `<span style="color:var(--clean)">● a key is saved in this browser</span>`
+    : `<span style="color:var(--esc)">○ no key saved — using the server key / replay</span>`;
+  $("#keyInput").placeholder = set ? "•••• saved (type to replace)" : "sk-or-v1-…  (leave blank to use the server key)";
+}
+function renderChips() {
+  const h = $("#chips");
+  h.innerHTML = models.length
+    ? models.map((m, i) => `<span class="mchip">${m}<b data-i="${i}">✕</b></span>`).join("")
+    : `<span class="small dim">no custom models yet</span>`;
+  h.querySelectorAll("b[data-i]").forEach(b => b.onclick = () => {
+    models.splice(+b.dataset.i, 1); write(LS_MODELS, models.join(",")); renderChips(); flash("removed");
+  });
+}
+function flash(t) { $("#savedMsg").textContent = t; setTimeout(() => $("#savedMsg").textContent = "", 1800); }
+
+$("#keySave").onclick = () => { const v = $("#keyInput").value.trim(); if (v) { write(LS_KEY, v); $("#keyInput").value = ""; } keyState(); flash("key saved"); };
+$("#keyClear").onclick = () => { write(LS_KEY, ""); $("#keyInput").value = ""; keyState(); flash("key cleared"); };
+$("#modelAdd").onclick = () => { const v = $("#modelInput").value.trim(); if (v && !models.includes(v)) { models.push(v); write(LS_MODELS, models.join(",")); $("#modelInput").value = ""; renderChips(); flash("model added"); } };
+$("#modelInput").addEventListener("keydown", e => { if (e.key === "Enter") $("#modelAdd").click(); });
+
+fetch("/api/health").then(r => r.json()).then(h => {
+  $("#health").innerHTML = `server key: ${h.api_key_present ? "<span style='color:var(--clean)'>present</span>" : "<span style='color:var(--esc)'>none</span>"}`;
+});
+keyState(); renderChips();
+</script>
+</body>
+</html>

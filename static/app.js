@@ -212,21 +212,32 @@ function renderAttackSamples(){
   $$(".sitem", host).forEach(el => el.onclick = () => selectAttackSample(el.dataset.id, host));
 }
 
+const PHASE = {raw:"Raw", seed:"Seed", root:"Root", spawn:"Spawn"};
+function dprime(d, trace){           // build D' = µ + code + comment(trace)
+  const [o,c] = d.comment || ["/*","*/"];
+  const mk = d.marker ? `${o}${d.marker}${c}\n` : "";
+  return `${mk}${d.code || ""}\n\n${o}\n${trace}\n${c}`;
+}
+
 async function selectAttackSample(id, host){
   $$(".sitem", host).forEach(x => x.classList.toggle("on", x.dataset.id === id));
   const d = await api(`/api/sample/${id}`);
   state.attackSample = d;
   $("#asTitle").textContent = d.title || d.id;
   $("#asSrc").textContent = `${d.family||''} · ${d.source||''}`;
-  // reset phases
   ["Raw","Seed","Root","Spawn"].forEach(p => setBadge("#v"+p, "—","b-unk"));
-  $("#cRaw").textContent = d.variants.raw || "";
-  $("#cRoot").innerHTML = highlightTrace(d.variants.inception || d.variants.raw);
-  $("#tSeed").textContent = d.trace || "(this sample has no planted trace)";
+  // prefill editable inputs
+  $("#inRaw").value   = d.variants.raw || d.code || "";
+  $("#inSeed").value  = d.seed_input || d.variants.raw || "";
+  $("#inRoot").value  = d.variants.inception || d.variants.raw || "";
+  $("#inSpawn").value = d.variants.inception || d.variants.raw || "";
   $("#rRaw").textContent = "The honest baseline — the target should flag the malicious artifact.";
+  $("#rSeed").textContent = "the surrogate's reasoning becomes the \"borrowed thought\"";
   $("#rRoot").textContent = "With the planted trace, the same model should flip its verdict.";
   $("#rSpawn").textContent = "Cross-model transfer — the harvested trace is replayed unchanged.";
-  $("#runPipeline").disabled = false;
+  $("#useTrace").style.display = "none";
+  $("#runAll").disabled = false;
+  $$(".runp").forEach(b => b.disabled = false);
 }
 
 function setBadge(sel, text, cls){
@@ -238,23 +249,43 @@ function verdictBadge(sel, v){
   const [c,t] = m[v]||m.UNKNOWN; setBadge(sel,t,c);
 }
 
+async function runPhase(role){
+  const d = state.attackSample; if(!d) return null;
+  const P = PHASE[role];
+  const model = role === "spawn" ? $("#xModel").value : state.model;
+  const btn = $(`.runp[data-role="${role}"]`);
+  if (btn){ btn.disabled = true; btn.dataset.lbl = btn.textContent; btn.innerHTML = '<span class="spin"></span>'; }
+  setBadge("#v"+P, "…", "b-unk");
+  if (role === "spawn") $("#spawnLabel").textContent = `P_tgt · D′ · ${model}`;
+  const artifact = $("#in"+P).value;
+  const r = await post("/api/phase", {role, sample:d.id, artifact, model, mode:state.mode});
+  verdictBadge("#v"+P, r.verdict);
+  const out = r.reasoning || r.content || (r.error ? "error: "+r.error : "(no reasoning returned)");
+  $("#r"+P).textContent = (role==="spawn" ? `(${model}) ` : "") + out;
+  if (btn){ btn.innerHTML = btn.dataset.lbl || "▶ Run"; btn.disabled = false; }
+  if (role === "seed"){
+    state.harvested = (r.verdict === "CLEAN" && r.reasoning) ? r.reasoning : (d.trace || "");
+    $("#useTrace").style.display = state.harvested ? "inline-block" : "none";
+  }
+  return r;
+}
+
 function wireAttack(){
-  $("#runPipeline").onclick = async () => {
-    const d = state.attackSample; if(!d) return;
-    const spawn = $("#xModel").value;
-    const btn = $("#runPipeline"); btn.disabled = true; btn.innerHTML = '<span class="spin"></span> running pipeline';
-    ["Raw","Seed","Root","Spawn"].forEach(p => setBadge("#v"+p,"…","b-unk"));
-    $("#spawnLabel").textContent = `P_tgt · D′ · ${spawn}`;
-    const r = await post("/api/pipeline", {sample:d.id, model:state.model, spawn_model:spawn, mode:state.mode});
-    verdictBadge("#vRaw", r.raw.verdict); $("#rRaw").textContent = r.raw.reasoning || r.raw.content || "(no reasoning)";
-    verdictBadge("#vSeed", r.seed.verdict); $("#tSeed").textContent = r.seed.trace || "(no trace harvested)";
-    verdictBadge("#vRoot", r.root.verdict); $("#rRoot").textContent = r.root.reasoning || r.root.content || "(no reasoning)";
-    $("#cRoot").innerHTML = highlightTrace(r.root.artifact || "");
-    verdictBadge("#vSpawn", r.spawn.verdict);
-    $("#rSpawn").textContent = `(${esc(spawn)}) ` + (r.spawn.reasoning || r.spawn.content || "(no reasoning)");
-    btn.innerHTML = "▶ Run pipeline"; btn.disabled = false;
-    if (r.raw.verdict==="MALICIOUS" && r.root.verdict==="CLEAN")
-      toast("RAW→ROOT: MALICIOUS ➜ CLEAN. "+(r.spawn.verdict==="CLEAN"?"And it transferred to "+spawn+".":""));
+  $$(".runp").forEach(b => b.onclick = () => runPhase(b.dataset.role));
+  $("#useTrace").onclick = () => {
+    const d = state.attackSample; const t = state.harvested; if(!d || !t) return;
+    const dp = dprime(d, t);
+    $("#inRoot").value = dp; $("#inSpawn").value = dp;
+    toast("Harvested trace planted into ROOT & SPAWN inputs.");
+  };
+  $("#runAll").onclick = async () => {
+    const btn = $("#runAll"); btn.disabled = true; btn.innerHTML = '<span class="spin"></span> running all';
+    await runPhase("raw");
+    const seed = await runPhase("seed");
+    if (seed && state.harvested){ const dp = dprime(state.attackSample, state.harvested); $("#inRoot").value = dp; $("#inSpawn").value = dp; }
+    await runPhase("root");
+    await runPhase("spawn");
+    btn.innerHTML = "▶ Run all phases"; btn.disabled = false;
   };
 }
 

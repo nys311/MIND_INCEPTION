@@ -84,40 +84,55 @@
         <div class="card"><div class="row">
           <div><h3 id="asTitle">Select a sample</h3><div class="small dim" id="asSrc"></div></div>
           <span class="spacer"></span>
-          <span class="muted small">SPAWN model</span><select id="xModel"></select>
-          <button class="primary" id="runPipeline" disabled>▶ Run pipeline</button>
+          <button class="primary" id="runAll" disabled>▶ Run all phases</button>
         </div>
-        <div class="hint" style="margin-top:6px">RAW refuses → SEED harvests a trace from a permissive
-        surrogate → ROOT transplants it (same model flips) → SPAWN replays it on another family.</div>
+        <div class="hint" style="margin-top:6px">Each phase has its own <b>input on the left</b> (editable) and a
+        <b>Run</b> button; the <b>result shows on the right</b>. RAW refuses → SEED harvests a trace →
+        ROOT transplants it → SPAWN replays it on another family.</div>
         </div>
 
         <div class="phases">
           <div class="phase" id="ph-raw">
             <div class="phhead"><span class="phnum">RAW</span>
               <div><b>Target analyzes the artifact as-is</b><div class="small dim mono">P_tgt · D</div></div>
-              <span class="spacer"></span><span class="badge b-unk" id="vRaw">—</span></div>
-            <div class="reason" id="rRaw">The honest baseline — the target should flag the malicious artifact.</div>
-            <details><summary>artifact sent</summary><pre class="code" id="cRaw"></pre></details>
+              <span class="spacer"></span><button class="runp" data-role="raw" disabled>▶ Run</button></div>
+            <div class="pgrid">
+              <div class="pin"><div class="plabel">input sent — artifact (editable)</div><textarea class="ta" id="inRaw"></textarea></div>
+              <div class="pout"><div class="plabel">result <span id="vRaw" class="badge b-unk">—</span></div>
+                <div class="reason" id="rRaw">The honest baseline — the target should flag the malicious artifact.</div></div>
+            </div>
           </div>
           <div class="phase" id="ph-seed">
             <div class="phhead"><span class="phnum seed">SEED</span>
               <div><b>Permissive surrogate harvests a reasoning trace</b><div class="small dim mono">P_surr · D+µ</div></div>
-              <span class="spacer"></span><span class="badge b-unk" id="vSeed">—</span></div>
-            <div class="small muted">Harvested trace <b>T<sub>adv</sub></b> (the "borrowed thought"):</div>
-            <pre class="code trace-box" id="tSeed">—</pre>
+              <span class="spacer"></span><button class="runp" data-role="seed" disabled>▶ Run</button></div>
+            <div class="pgrid">
+              <div class="pin"><div class="plabel">input sent — code + marker µ (editable)</div><textarea class="ta" id="inSeed"></textarea></div>
+              <div class="pout"><div class="plabel">harvested trace T<sub>adv</sub> <span id="vSeed" class="badge b-unk">—</span>
+                <button id="useTrace" class="mini" style="display:none">⤵ use in ROOT &amp; SPAWN</button></div>
+                <div class="reason trace-box" id="rSeed">the surrogate's reasoning becomes the "borrowed thought"</div></div>
+            </div>
           </div>
           <div class="phase" id="ph-root">
             <div class="phhead"><span class="phnum root">ROOT</span>
               <div><b>Transplant the trace — same target model</b><div class="small dim mono">P_tgt · D′ = D ∥ µ ∥ T_adv</div></div>
-              <span class="spacer"></span><span class="badge b-unk" id="vRoot">—</span></div>
-            <div class="reason" id="rRoot">With the planted trace, the same model should flip its verdict.</div>
-            <details><summary>transplanted artifact (planted trace highlighted)</summary><pre class="code" id="cRoot"></pre></details>
+              <span class="spacer"></span><button class="runp" data-role="root" disabled>▶ Run</button></div>
+            <div class="pgrid">
+              <div class="pin"><div class="plabel">input sent — code + planted trace (editable)</div><textarea class="ta" id="inRoot"></textarea></div>
+              <div class="pout"><div class="plabel">result <span id="vRoot" class="badge b-unk">—</span></div>
+                <div class="reason" id="rRoot">With the planted trace, the same model should flip its verdict.</div></div>
+            </div>
           </div>
           <div class="phase" id="ph-spawn">
             <div class="phhead"><span class="phnum spawn">SPAWN</span>
               <div><b>Replay the same trace on another model family</b><div class="small dim mono" id="spawnLabel">P_tgt · D′ · other model</div></div>
-              <span class="spacer"></span><span class="badge b-unk" id="vSpawn">—</span></div>
-            <div class="reason" id="rSpawn">Cross-model transfer — the harvested trace is replayed unchanged.</div>
+              <span class="spacer"></span><span class="muted small">model</span><select id="xModel"></select>
+              <button class="runp" data-role="spawn" disabled>▶ Run</button></div>
+            <div class="pgrid">
+              <div class="pin"><div class="plabel">input sent — same D′ (editable)</div><textarea class="ta" id="inSpawn"></textarea></div>
+              <div class="pout"><div class="plabel">result <span id="vSpawn" class="badge b-unk">—</span></div>
+                <div class="reason" id="rSpawn">Cross-model transfer — the harvested trace is replayed unchanged.</div></div>
+            </div>
           </div>
         </div>
       </div>

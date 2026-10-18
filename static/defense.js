@@ -1,5 +1,6 @@
 "use strict";
 const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const api = async u => (await fetch(u)).json();
 const esc = s => (s || "").replace(/[&<>]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
 const FAMCOL = { baseline: "var(--fam-baseline)", surface: "var(--fam-surface)",
@@ -29,7 +30,7 @@ async function boot() {
     $("#statsmeta").innerHTML = "No pre-computed stats yet — run "
       + "<code>python3 bench.py --mode live --scope all --strategies all --out defense_stats</code>.";
   }
-  renderChart(); renderTable(); renderFamilies();
+  renderChart(); renderTable(); renderMethodNames();
   $("#expCsv").onclick = exportCsv;
 }
 
@@ -137,26 +138,108 @@ function famDiagram(fam) {
   return `<svg viewBox="0 0 ${W} ${H}" width="100%" style="max-width:640px;font-family:var(--mono)">${g}</svg>`;
 }
 
-function renderFamilies() {
-  const host = $("#families");
+// ---- per-method mechanism diagram (horizontal pipeline) ----
+function dbox(x, y, w, h, label, fill, stroke, sub) {
+  return `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="7" fill="${fill || "#121823"}" stroke="${stroke || "#2b3647"}"/>`
+    + `<text x="${x + w / 2}" y="${y + (sub ? h / 2 - 3 : h / 2 + 4)}" fill="#dce7f5" font-size="11.5" font-weight="600" text-anchor="middle">${label}</text>`
+    + (sub ? `<text x="${x + w / 2}" y="${y + h / 2 + 12}" fill="#8a97a8" font-size="9.5" text-anchor="middle">${sub}</text>` : "");
+}
+function darr(x1, x2, y) {
+  return `<line x1="${x1}" y1="${y}" x2="${x2 - 7}" y2="${y}" stroke="#46566b" stroke-width="2"/>`
+    + `<path d="M${x2 - 8},${y - 4} L${x2},${y} L${x2 - 8},${y + 4} Z" fill="#46566b"/>`;
+}
+// each method: ordered list of stage boxes between Artifact and the LRM/Verdict
+const MECH = {
+  none: { stages: [], caption: "planted trace flows straight into the model → it adopts it" },
+  strip_comments: { stages: [["✂ strip comments", "surface"]], caption: "remove comment text the trace hides in — relocation into print()/echo can survive" },
+  code_only: { stages: [["✂ strip comments + prose", "surface"]], caption: "also blanks long prose string literals; many short relocated strings can slip through" },
+  narrative_scrub: { stages: [["✂ remove deliberation lines", "surface"]], caption: "deletes lines that read as reasoning (pronoun/step/verdict cues); brittle to paraphrase" },
+  sandwich: { stages: [["⟲ repeat task after data", "structural"]], caption: "re-assert the instruction after the artifact + remind that embedded reasoning is untrusted" },
+  spotlight: { stages: [["⟦ random-fenced data ⟧", "structural"]], caption: "fence untrusted data with an unforgeable marker; forbid honoring anything inside" },
+  datamark: { stages: [["░ sentinel between tokens", "structural"]], caption: "break up planted prose so it can't read as fluent native thought" },
+  encoding: { stages: [["base64 encode", "structural"], ["model decodes", "structural"]], caption: "no fluent planted prose sits directly in context; model decodes then analyzes" },
+  hierarchy: { stages: [["system: in-data rules = 0 authority", "structural"]], caption: "instruction hierarchy — reasoning embedded in data was not produced by the model" },
+  trace_detector: { gate: ["🔍 planted-CoT classifier", "detector"], caption: "block artifacts that read like an injected reasoning trace before the model is called" },
+  llama_guard: { gate: ["🔍 Llama-Guard-3", "detector"], caption: "off-the-shelf safety/injection detector gates the artifact (paper: largely blind to the trace)" },
+  signature_crosscheck: { post: ["non-LLM signature scan", "architectural"], caption: "scanner ignores comments; if it sees an exec sink but the LRM says CLEAN → override to MALICIOUS" },
+  nmodel_vote: { vote: true, caption: "query several LRMs; majority rules, disagreement escalates — one fooled model can't pass it alone" },
+  defense_in_depth: { stages: [["✂ strip", "surface"], ["⟲ sandwich", "structural"]], gate: ["🔍 planted-CoT", "detector"], post: ["signature override", "architectural"], caption: "layers: sanitize + isolate + detector pre-filter + non-LLM cross-check" },
+};
+function methodDiagram(id) {
+  const m = MECH[id] || MECH.none, W = 640, H = 120, y = 44;
+  const col = f => FAMCOL[f] || "#2b3647";
+  const fillFor = f => ({surface:"#1a1226", structural:"#101f36", detector:"#241a06", architectural:"#06231a"}[f] || "#121823");
+  let g = dbox(8, y, 120, 34, "Artifact + trace", "#1b1507", "#5a4a1e"), x = 128;
+  // gate (detector): branch to BLOCK / LRM
+  if (m.gate && !m.stages && !m.post) {
+    g += darr(x, x + 60, y + 17) + dbox(x + 60, y - 2, 140, 42, m.gate[0], fillFor(m.gate[1]), col(m.gate[1]));
+    const gx = x + 200;
+    g += `<path d="M${gx},${y + 17} L${gx + 55},${y - 14}" stroke="#46566b" stroke-width="2"/><path d="M${gx},${y + 17} L${gx + 55},${y + 48}" stroke="#46566b" stroke-width="2"/>`;
+    g += dbox(gx + 58, y - 30, 120, 28, "flag → BLOCK", "#2a0f14", "#512");
+    g += dbox(gx + 58, y + 34, 120, 28, "clear → LRM", "#06231a", "#164");
+    return wrapSvg(g, m.caption, W, H);
+  }
+  // vote (architectural ensemble)
+  if (m.vote) {
+    g += `<path d="M${x},${y + 17} L${x + 50},${y - 10}" stroke="#46566b" stroke-width="2"/><path d="M${x},${y + 17} L${x + 50},${y + 17}" stroke="#46566b" stroke-width="2"/><path d="M${x},${y + 17} L${x + 50},${y + 44}" stroke="#46566b" stroke-width="2"/>`;
+    g += dbox(x + 52, y - 24, 110, 26, "LRM A");
+    g += dbox(x + 52, y + 4, 110, 26, "LRM B");
+    g += dbox(x + 52, y + 32, 110, 26, "LRM C");
+    g += darr(x + 162, x + 230, y + 17) + dbox(x + 232, y, 140, 34, "majority / escalate", "#06231a", "#1c4a33");
+    g += darr(x + 372, x + 440, y + 17) + dbox(x + 440, y, 100, 34, "Verdict");
+    return wrapSvg(g, m.caption, W, H);
+  }
+  // linear: Artifact → [stages…] → LRM → [post?] → Verdict
+  (m.stages || []).forEach(st => { g += darr(x, x + 56, y + 17); x += 56; g += dbox(x, y - 2, 132, 42, st[0], fillFor(st[1]), col(st[1])); x += 132; });
+  g += darr(x, x + 56, y + 17); x += 56; g += dbox(x, y, 96, 34, "LRM"); x += 96;
+  if (m.post) { g += darr(x, x + 56, y + 17); x += 56; g += dbox(x, y - 2, 150, 42, m.post[0], fillFor(m.post[1]), col(m.post[1])); x += 150; }
+  g += darr(x, Math.min(x + 54, W - 96), y + 17);
+  g += dbox(Math.min(x + 54, W - 94), y, 90, 34, m.post ? "override" : "Verdict", m.post ? "#2a0f14" : "#121823", m.post ? "#512" : "#2b3647");
+  return wrapSvg(g, m.caption, W, Math.max(H, y + 44));
+}
+function wrapSvg(g, caption, W, H) {
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" style="max-width:660px;font-family:var(--mono)">${g}`
+    + `<text x="8" y="${H - 8}" fill="#8a97a8" font-size="10.5">${esc(caption)}</text></svg>`;
+}
+
+function renderMethodNames() {
+  const host = $("#defNames");
   host.innerHTML = STATE.families.map(fam => {
     const items = STATE.strategies.filter(s => s.family === fam);
     if (!items.length) return "";
-    const cards = items.map(s => {
+    const rows = items.map(s => {
       const r = STATE.byId[s.id] || {};
-      const num = r.asr == null ? "" :
-        `<div class="small mono" style="margin-top:6px">measured ASR
-          <b style="color:${r.asr > .5 ? "var(--mal)" : r.asr > .1 ? "var(--esc)" : "var(--clean)"}">${pct(r.asr)}</b>
-          · FP ${pct(r.fp)} · utility ${pct(r.utility)}</div>`;
-      return `<div class="card" style="margin:0">
-        <div style="font-weight:700">${esc(s.label)}</div>
-        <div class="small muted" style="margin:4px 0">${esc(s.desc)}</div>
-        <div class="hint">expected: ${esc(s.expect || "")}</div>${num}</div>`;
+      const chip = r.asr == null ? "" :
+        `<span class="mono small" style="color:${r.asr > .5 ? "var(--mal)" : r.asr > .1 ? "var(--esc)" : "var(--clean)"}">${pct(r.asr)}</span>`;
+      return `<div class="mname" data-id="${s.id}">
+        <span class="sdot2" style="background:${FAMCOL[fam]}"></span>
+        <span style="flex:1">${esc(s.label)}</span>${chip}</div>`;
     }).join("");
-    return `<h3 style="color:${FAMCOL[fam]};margin:18px 0 8px;text-transform:capitalize">${fam} defenses</h3>
-      <div class="card" style="margin-bottom:10px">${famDiagram(fam)}</div>
-      <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(300px,1fr))">${cards}</div>`;
+    return `<div class="famtag" style="color:${FAMCOL[fam]};margin:10px 0 4px">${fam}</div>${rows}`;
   }).join("");
+  $$(".mname", host).forEach(el => el.onclick = () => showMethod(el.dataset.id));
+  showMethod(STATE.strategies[0].id);
+}
+
+function showMethod(id) {
+ try {
+  $$(".mname").forEach(el => el.classList.toggle("on", el.dataset.id === id));
+  const s = STATE.strategies.find(x => x.id === id) || {};
+  const r = STATE.byId[id] || {};
+  const pv = r.asr_by_variant || {};
+  const stat = r.asr == null ? `<span class="dim">not measured in the shipped stats</span>` :
+    `<span class="mono">ASR <b style="color:${r.asr > .5 ? "var(--mal)" : r.asr > .1 ? "var(--esc)" : "var(--clean)"}">${pct(r.asr)}</b>
+      · Δ ${r.delta_asr_pp == null ? "—" : (r.delta_asr_pp > 0 ? "+" : "") + r.delta_asr_pp + "pp"}
+      · comment ${pct(pv.inception)} · print ${pct(pv.relocated)}
+      · FP ${pct(r.fp)} · utility ${pct(r.utility)} · score ${r.score == null ? "—" : Math.round(r.score * 100)}</span>`;
+  $("#defDetail").innerHTML = `
+    <div class="row"><h3 style="margin:0">${esc(s.label)}</h3>
+      <span class="famtag" style="color:${FAMCOL[s.family]}">${s.family}</span></div>
+    <div class="muted small" style="margin:6px 0 4px">${esc(s.desc || "")}</div>
+    <div class="hint" style="margin-bottom:8px">expected: ${esc(s.expect || "")}</div>
+    <div class="card" style="margin:0;background:#0c1118">${methodDiagram(id)}</div>
+    <div class="small" style="margin-top:10px">${stat}</div>`;
+ } catch(e){ $("#defDetail").innerHTML = `<div class="reason" style="border-left-color:var(--mal)">showMethod error: ${esc(String(e && e.stack || e))}</div>`; }
 }
 
 function exportCsv() {

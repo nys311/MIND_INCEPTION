@@ -204,3 +204,21 @@ nav.tabs button.on{text-shadow:0 0 14px rgba(90,160,255,.5)}
   background-image:var(--cardbg);background-size:cover;background-position:center;opacity:.22;pointer-events:none}
 .usecard.hasbg::after{background:linear-gradient(180deg, rgba(10,12,16,.35), rgba(10,12,16,.9));opacity:1;mix-blend-mode:normal}
 .usecard.hasbg{border-color:#5a2730}
+
+/* ---- attack per-phase input/output ---- */
+.pgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px}
+@media(max-width:820px){.pgrid{grid-template-columns:1fr}}
+.plabel{font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;display:flex;align-items:center;gap:8px}
+textarea.ta{width:100%;min-height:150px;resize:vertical;background:#0b0e13;border:1px solid var(--line);
+  border-radius:8px;padding:10px;font-family:var(--mono);font-size:12px;color:#c6d2e2;line-height:1.5}
+textarea.ta:focus{outline:none;border-color:#33507e;box-shadow:0 0 0 1px #33507e}
+.pout .reason{min-height:150px}
+button.runp{font-size:12px;padding:6px 14px;background:#20324f;border-color:#33507e;color:#dce9ff}
+button.runp:hover{background:#274066}
+button.mini{font-size:11px;padding:3px 9px;border-radius:7px}
+
+/* ---- /defense method name list ---- */
+.mname{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid transparent;border-radius:8px;cursor:pointer;font-size:13px}
+.mname:hover{background:#0f141c}
+.mname.on{background:#15202f;border-color:#27425f}
+.sdot2{width:8px;height:8px;border-radius:50%;flex:none}

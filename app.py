@@ -39,6 +39,11 @@ def index():
     return render_template("index.html")
 
 
+@app.route("/models")
+def models_page():
+    return render_template("models.html")
+
+
 @app.route("/defense")
 def defense_page():
     return render_template("defense.html")
@@ -204,11 +209,15 @@ def sample_detail(sid):
     s = S.get_sample(sid)
     if not s:
         return jsonify({"error": "not found"}), 404
+    from core.domains import cfg as domcfg
+    dom = s.get("domain", "webshell")
     return jsonify({
         "id": s["id"], "label": s["label"], "title": s.get("title", ""),
         "family": s.get("family", ""), "source": s.get("source", ""),
+        "domain": dom, "comment": domcfg(dom)["comment"],
         "marker": s.get("marker"), "trace_id": s.get("trace_id"),
         "trace": S.load_trace(s.get("trace_id")),
+        "code": s.get("code", ""), "seed_input": S.seed_input(s),
         "variants": {v: S.compose(s, v) for v in S.VARIANTS},
     })
 
@@ -278,6 +287,34 @@ def pipeline_four_phase():
                  "input": seed_art[:3000]},
         "root": {**trim(root), "artifact": S.compose(s, "inception")[:3500]},
         "spawn": trim(spawn_res),
+    })
+
+
+@app.route("/api/phase", methods=["POST"])
+def run_phase():
+    """Run ONE attack phase on an editable artifact. role in raw|seed|root|spawn.
+    SEED uses the permissive surrogate system; the others use the plain target."""
+    d = request.get_json(force=True, silent=True) or {}
+    s = S.get_sample(d.get("sample", ""))
+    if not s:
+        return jsonify({"error": "unknown sample"}), 400
+    role = d.get("role", "raw")
+    model = d.get("model", PR.DEFAULT_MODELS[0])
+    mode = d.get("mode", "auto")
+    api_key = d.get("api_key") or None
+    from core.domains import task_for
+    domain = s.get("domain", "webshell")
+    artifact = d.get("artifact", "")
+    system = SURROGATE_SYS if role == "seed" else ""
+    user = f"{task_for(domain)}\n\n{artifact}"
+    res = PR.execute(s, f"phase_{role}", model, system, user,
+                     mode=mode, variant=role, domain=domain, api_key=api_key)
+    return jsonify({
+        "role": role, "verdict": res.get("verdict"),
+        "reasoning": (res.get("reasoning") or "")[:4000],
+        "content": (res.get("content") or "")[:2000],
+        "replay": res.get("replay", False), "model": res.get("model"),
+        "error": res.get("error"),
     })
 
 
