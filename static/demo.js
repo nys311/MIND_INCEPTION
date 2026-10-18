@@ -2,7 +2,7 @@
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const api = async u => (await fetch(u)).json();
-const post = (u, b) => fetch(u, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(b) }).then(r => r.json());
+const post = (u, b) => fetch(u, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(window.MILAB ? window.MILAB.body(b) : b) }).then(r => r.json());
 const esc = s => (s || "").replace(/[&<>]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
 const pct = x => (x == null ? "—" : (100 * x).toFixed(0) + "%");
 
@@ -28,8 +28,11 @@ async function boot() {
   S.usecases = uc.usecases;
   for (const s of st.strategies) S.strategies[s.id] = s;
   S.model = mo.models[0];
-  $("#model").innerHTML = mo.models.map(m => `<option>${m}</option>`).join("");
+  const fill = () => window.MILAB ? window.MILAB.fillSelect("#model", mo.models)
+    : ($("#model").innerHTML = mo.models.map(m => `<option>${m}</option>`).join(""));
+  fill();
   $("#model").onchange = e => S.model = e.target.value;
+  if (window.MILAB) window.MILAB.onChange(() => { const m=$("#model").value; fill(); $("#model").value=m||S.model; });
   $("#health").innerHTML = `<b>${uc.usecases.length}</b> use cases · api ${h.api_key_present ? "live" : "replay-only"}`;
   $$("#modeToggle button").forEach(b => b.onclick = () => {
     S.mode = b.dataset.mode;

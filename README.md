@@ -54,9 +54,13 @@ never hard-fails on a venue network.
 ## Usage guide
 
 Open **http://localhost:9999** (or `:9990` via Docker). Top-right controls apply
-everywhere: the **Model** picker and the **AUTO / LIVE / REPLAY** mode toggle
+everywhere: the **Model** picker, the **AUTO / LIVE / REPLAY** mode toggle
 (LIVE calls the real endpoint, REPLAY serves cached/stub results, AUTO tries the
-cache first then goes live). Three pages, linked in the header:
+cache first then goes live), and **⚙ API key / models** — paste your own
+OpenRouter key and add any model id (e.g. `anthropic/claude-3.7-sonnet`) to test
+other models live. The key is kept in your browser only and sent to the local
+server just to make the call. Every metric has a **?** tooltip explaining its
+meaning and which direction is better. Three pages, linked in the header:
 
 **Dashboard (`/`)** — numbers first, then detail, across four tabs:
 1. **Overview** — headline KPIs (undefended ASR, best defense, how many defenses
@@ -75,7 +79,8 @@ cache first then goes live). Three pages, linked in the header:
    (verdict, blocked?, deciding stage, detector findings, FP, latency).
 4. **Benchmark** — choose scope + defenses + model, **Run benchmark** for the full
    `sample × strategy` matrix → ASR / Δ / FP / Utility / score table + chart,
-   exportable to JSON/CSV.
+   exportable to JSON/CSV. **⤓ Download samples** exports the whole evaluation set
+   (all artifact variants) as one JSON to run against your own pipeline.
 
 **Use Cases (`/demo`)** — five end-to-end operational scenarios (webshell upload
 scanner, phishing filter, PowerShell/EDR triage, **SOAR auto-closing a Log4Shell

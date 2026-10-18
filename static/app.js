@@ -2,7 +2,19 @@
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const api = async (url, opts) => (await fetch(url, opts)).json();
-const post = (url, body) => api(url, {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)});
+const withKey = b => (window.MILAB ? window.MILAB.body(b) : b);
+const post = (url, body) => api(url, {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(withKey(body))});
+// metric help icon: text + direction (↓/↑ = which way is better)
+const help = (tip, dir) => `<span class="help" data-tip="${tip.replace(/"/g,'&quot;')}">?</span>`
+  + (dir ? `<span class="goal ${dir==='↓'?'down':'up'}">${dir} better</span>` : "");
+const TIPS = {
+  asr: "Attack Success Rate — share of malicious artifacts the model classified CLEAN (the attack worked). Adversarial: the attacker picks the best trace placement.",
+  fp: "False-Positive rate — benign artifacts wrongly flagged as malicious. The cost a defense imposes on legitimate traffic.",
+  utility: "Detection accuracy on clean control artifacts (no planted trace). A defense that wrecks utility is unusable even at 0% ASR.",
+  score: "Composite = (1−ASR)·(1−FP)·Utility ×100. Higher is a better overall trade-off.",
+  delta: "Change in ASR versus the undefended baseline, in percentage points. More negative = bigger reduction.",
+  escalate: "Share of cases routed to a human instead of auto-decided (disagreement / detector hit).",
+};
 
 const state = {model: null, mode: "auto", models: [], samples: [], strategies: [],
   families: [], attackSample: null, defSample: null, bench: null};
@@ -37,11 +49,15 @@ async function boot(){
   state.samples = sa.samples; state.stats = ds;
 
   state.model = state.models[0];
-  for (const sel of ["#model", "#xModel"]){
-    const el = $(sel); el.innerHTML = state.models.map(m => `<option>${m}</option>`).join("");
-  }
+  const fillModels = () => {
+    for (const sel of ["#model", "#xModel"]) (window.MILAB ? window.MILAB.fillSelect(sel, state.models)
+      : ($(sel).innerHTML = state.models.map(m=>`<option>${m}</option>`).join("")));
+    if (!$("#xModel").value) $("#xModel").value = state.models[1] || state.models[0];
+  };
+  fillModels();
   $("#xModel").value = state.models[1] || state.models[0];
   $("#model").onchange = e => { state.model = e.target.value; };
+  if (window.MILAB) window.MILAB.onChange(() => { const m=$("#model").value; fillModels(); $("#model").value=m||state.model; });
 
   renderHealth(h);
   renderModeToggle();
@@ -54,6 +70,12 @@ async function boot(){
     `api_key=${h.api_key_present} · cached_runs=${h.cached_runs} · samples=${h.samples} · strategies=${h.strategies}`;
 
   wireAttack(); wireDefense(); wireBench();
+
+  // step bar -> jump to tab
+  $$("#stepbar .stp").forEach(s => s.onclick = () => { activateTab(s.dataset.go); history.replaceState(null,"","#"+s.dataset.go); });
+  $$("#stepbar .stp").forEach(s => s.classList.toggle("on", s.dataset.go === "overview"));
+  // download samples
+  const dl = $("#dlSamples"); if (dl) dl.onclick = () => window.open("/api/samples/download", "_blank");
 }
 
 // ---------------------------------------------------------------- overview
@@ -77,9 +99,9 @@ function renderOverview(){
   // KPI tiles
   const kpi = (n,l,c)=>`<div class="k"><div class="n" style="color:${c||'var(--ink)'}">${n}</div><div class="l">${l}</div></div>`;
   $("#ovKpi").innerHTML =
-    kpi(base.asr!=null?pctO(base.asr):"75%","undefended attack success","var(--mal)")
-    + kpi(best?`${pctO(best.asr)}`:"0%", best?`best defense (${esc(best.label)})`:"best defense","var(--clean)")
-    + kpi(measured.length?zero:"6","defenses that fully block","var(--clean)")
+    kpi(base.asr!=null?pctO(base.asr):"75%","undefended attack success"+help(TIPS.asr),"var(--mal)")
+    + kpi(best?`${pctO(best.asr)}`:"0%", (best?`best defense (${esc(best.label)})`:"best defense")+help(TIPS.asr+" Lower is better.","↓"),"var(--clean)")
+    + kpi(measured.length?zero:"6","defenses that reach 0% ASR","var(--clean)")
     + kpi(state.samples.length, "labeled artifacts","var(--accent)")
     + kpi("4","task domains","var(--accent)")
     + kpi(state.strategies.length,"defenses evaluated","var(--accent)");
@@ -138,6 +160,8 @@ function activateTab(v){
   $$("#tabs button").forEach(x => x.classList.remove("on")); btn.classList.add("on");
   $$(".view").forEach(s => s.classList.remove("on"));
   const view = $(`#v-${v}`); if(view) view.classList.add("on");
+  $$("#stepbar .stp").forEach(s => s.classList.toggle("on", s.dataset.go === v));
+  window.scrollTo({top:0, behavior:"smooth"});
 }
 function renderTabs(){
   $$("#tabs button").forEach(b => b.onclick = () => {
@@ -344,11 +368,12 @@ function renderBench(res){
 
   // table
   $("#benchTableCard").style.display="block";
+  const H = (t,k,tip) => `<th class="num" data-k="${k}">${t}<span class="help" data-tip="${tip.replace(/"/g,'&quot;')}">?</span></th>`;
   const head = `<thead><tr>
-    <th>Defense</th><th>Family</th>
-    <th class="num" data-k="asr">ASR ↓</th><th class="num" data-k="delta_asr_pp">Δ vs none</th>
-    <th class="num" data-k="fp">FP ↓</th><th class="num" data-k="utility">Utility ↑</th>
-    <th class="num" data-k="escalate_rate">Escalate</th><th class="num" data-k="score">Score ↑</th>
+    <th>Defense <span class="help" data-tip="Click a column header to sort. Hover a metric's ? for its meaning.">?</span></th><th>Family</th>
+    ${H("ASR ↓","asr",TIPS.asr+" Lower is better.")}${H("Δ vs none","delta_asr_pp",TIPS.delta)}
+    ${H("FP ↓","fp",TIPS.fp+" Lower is better.")}${H("Utility ↑","utility",TIPS.utility+" Higher is better.")}
+    ${H("Escalate","escalate_rate",TIPS.escalate)}${H("Score ↑","score",TIPS.score)}
     <th class="num" data-k="avg_latency_ms">ms</th></tr></thead>`;
   const body = rows.map(r => {
     const famc=FAMCOL[r.family]||"var(--mut)";

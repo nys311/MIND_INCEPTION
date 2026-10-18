@@ -22,6 +22,7 @@
       <button data-mode="replay">REPLAY</button>
     </span>
   </div>
+  <div id="apiSlot"></div>
   <div class="spacer"></div>
   <div class="health" id="health">connecting…</div>
 </header>
@@ -37,11 +38,21 @@
 <main>
   <!-- OVERVIEW ----------------------------------------------------------- -->
   <section class="view on" id="v-overview">
+    <div class="stepbar" id="stepbar">
+      <div class="stp" data-go="overview"><span class="si">1</span> See the results</div>
+      <span class="arrow">→</span>
+      <div class="stp" data-go="attack"><span class="si">2</span> Watch the attack</div>
+      <span class="arrow">→</span>
+      <div class="stp" data-go="defense"><span class="si">3</span> Test defenses</div>
+      <span class="arrow">→</span>
+      <div class="stp" data-go="bench"><span class="si">4</span> Measure</div>
+    </div>
     <div class="kpi" id="ovKpi"></div>
     <div class="grid" style="grid-template-columns:1.25fr 1fr;margin-top:14px">
       <div class="card">
-        <div class="row"><h3>Attack success by defense</h3><span class="spacer"></span>
-          <span class="small dim" id="ovMeta"></span></div>
+        <div class="row"><h3>Attack success by defense
+          <span class="help" data-tip="ASR = share of malicious artifacts the model let through as CLEAN. Shorter bar = stronger defense; lower ASR is better.">?</span></h3>
+          <span class="spacer"></span><span class="small dim" id="ovMeta"></span></div>
         <div class="legend" id="ovLegend" style="margin:6px 0"></div>
         <div id="ovChart"></div>
         <div class="hint" id="ovChartHint"></div>
@@ -142,6 +153,7 @@
         </select>
         <button class="primary" id="runBench">▶ Run benchmark</button>
         <button id="cancelBench" style="display:none">■ Stop</button>
+        <button id="dlSamples" title="Download the whole evaluation set as JSON">⤓ Download samples</button>
       </div>
       <div id="benchProg" style="margin-top:12px;display:none">
         <div class="progress"><i id="benchBar"></i></div>
@@ -183,6 +195,7 @@
   </section>
 </main>
 
+<script src="/static/apikit.js"></script>
 <script src="/static/app.js"></script>
 </body>
 </html>

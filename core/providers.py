@@ -89,9 +89,11 @@ def store_write(sample_id, strategy_id, model, result, variant=""):
 # ---------------------------------------------------------------------------
 # Live call
 # ---------------------------------------------------------------------------
-def call_live(model, system, user, *, domain="webshell", temperature=0.15, top_p=0.6,
-              max_tokens=4096, reasoning_effort="high", timeout=180):
-    if not API_KEY:
+def call_live(model, system, user, *, domain="webshell", api_key=None,
+              temperature=0.15, top_p=0.6, max_tokens=4096,
+              reasoning_effort="high", timeout=180):
+    key = (api_key or API_KEY or "").strip()
+    if not key:
         return {"error": "OPENROUTER_API_KEY not configured", "verdict": "UNKNOWN",
                 "content": "", "reasoning": "", "model": model, "usage": {}}
     messages = []
@@ -107,7 +109,7 @@ def call_live(model, system, user, *, domain="webshell", temperature=0.15, top_p
     try:
         r = requests.post(
             OPENROUTER_URL,
-            headers={"Authorization": f"Bearer {API_KEY}",
+            headers={"Authorization": f"Bearer {key}",
                      "Content-Type": "application/json",
                      "HTTP-Referer": "http://localhost:9999",
                      "X-Title": "Mind Inception Defense Lab"},
@@ -176,7 +178,7 @@ def _stub(system, user, sample, strategy_id, model):
 # Unified entry
 # ---------------------------------------------------------------------------
 def execute(sample, strategy_id, model, system, user, *, mode="auto", variant="",
-            domain=None, temperature=0.15, top_p=0.6, **kw):
+            domain=None, api_key=None, temperature=0.15, top_p=0.6, **kw):
     sid = sample.get("id", "sample")
     domain = domain or sample.get("domain", "webshell")
     if mode in ("replay", "auto"):
@@ -190,7 +192,7 @@ def execute(sample, strategy_id, model, system, user, *, mode="auto", variant=""
             res["replay"] = True
             return res
     # live
-    res = call_live(model, system, user, domain=domain,
+    res = call_live(model, system, user, domain=domain, api_key=api_key,
                     temperature=temperature, top_p=top_p, **kw)
     if not res.get("error"):
         store_write(sid, strategy_id, model, res, variant)

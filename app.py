@@ -92,6 +92,25 @@ def usecases():
     return jsonify({"usecases": USECASES})
 
 
+@app.route("/api/samples/download")
+def samples_download():
+    """Download the whole evaluation set as one JSON bundle (metadata + the three
+    artifact variants per sample) for running against your own pipeline."""
+    bundle = {"generated_by": "mi_lab", "count": 0, "samples": []}
+    for s in S.list_samples():
+        bundle["samples"].append({
+            "id": s["id"], "label": s["label"], "domain": s.get("domain"),
+            "family": s.get("family"), "title": s.get("title"), "source": s.get("source"),
+            "marker": s.get("marker"), "trace_id": s.get("trace_id"),
+            "artifacts": {v: S.compose(s, v) for v in ("raw", "inception", "relocated")},
+        })
+    bundle["count"] = len(bundle["samples"])
+    from flask import Response
+    return Response(json.dumps(bundle, ensure_ascii=False, indent=2),
+                    mimetype="application/json",
+                    headers={"Content-Disposition": "attachment; filename=mi_lab_samples.json"})
+
+
 @app.route("/api/defense_stats")
 def defense_stats():
     """Serve the most recent pre-computed defense benchmark, if present."""
@@ -189,6 +208,7 @@ def pipeline_four_phase():
     spawn = d.get("spawn_model") or next(
         (m for m in PR.DEFAULT_MODELS if m != target), target)
     mode = d.get("mode", "auto")
+    api_key = d.get("api_key") or None
     from core.domains import task_for
     task = task_for(s.get("domain", "webshell"))
 
@@ -198,14 +218,14 @@ def pipeline_four_phase():
                 "content": (res.get("content") or "")[:1200],
                 "replay": res.get("replay", False), "model": res.get("model")}
 
-    raw = P.run(s, "raw", "none", target, mode=mode)
-    root = P.run(s, "inception", "none", target, mode=mode)
-    spawn_res = P.run(s, "inception", "none", spawn, mode=mode)
+    raw = P.run(s, "raw", "none", target, mode=mode, api_key=api_key)
+    root = P.run(s, "inception", "none", target, mode=mode, api_key=api_key)
+    spawn_res = P.run(s, "inception", "none", spawn, mode=mode, api_key=api_key)
 
     # SEED: run the permissive surrogate on D+µ to harvest a trace
     seed_art = S.seed_input(s)
     seed_raw = PR.execute(s, "phase_seed", target, SURROGATE_SYS,
-                          f"{task}\n\n{seed_art}", mode=mode, variant="seed")
+                          f"{task}\n\n{seed_art}", mode=mode, variant="seed", api_key=api_key)
     planted = S.load_trace(s.get("trace_id"))
     reasoning = (seed_raw.get("reasoning") or "").strip()
     live_clean = seed_raw.get("verdict") == "CLEAN" and reasoning
@@ -235,7 +255,8 @@ def run_one():
     if not s:
         return jsonify({"error": "unknown sample"}), 400
     dec = P.run(s, d.get("variant", "inception"), d.get("strategy", "none"),
-                d.get("model", PR.DEFAULT_MODELS[0]), mode=d.get("mode", "auto"))
+                d.get("model", PR.DEFAULT_MODELS[0]), mode=d.get("mode", "auto"),
+                api_key=(d.get("api_key") or None))
     # trim artifact for payload size
     dec["artifact_preview"] = dec.pop("artifact", "")[:4000]
     return jsonify(dec)
@@ -247,7 +268,7 @@ def run_one():
 JOBS = {}
 
 
-def _run_matrix(job_id, sample_ids, strategy_ids, model, mode):
+def _run_matrix(job_id, sample_ids, strategy_ids, model, mode, api_key=None):
     job = JOBS[job_id]
     decisions = []
     # build the unit of work: malicious -> raw+inception, benign -> raw
@@ -266,7 +287,7 @@ def _run_matrix(job_id, sample_ids, strategy_ids, model, mode):
         if job.get("cancel"):
             break
         try:
-            dec = P.run(s, v, strat, model, mode=mode)
+            dec = P.run(s, v, strat, model, mode=mode, api_key=api_key)
         except Exception as e:
             dec = {"sample_id": s["id"], "variant": v, "strategy": strat,
                    "label": s["label"], "final_verdict": "UNKNOWN", "error": str(e),
@@ -300,10 +321,11 @@ def benchmark():
     strategy_ids = d.get("strategies") or [s["id"] for s in D.STRATEGIES]
     model = d.get("model", PR.DEFAULT_MODELS[0])
     mode = d.get("mode", "auto")
+    api_key = d.get("api_key") or None
     job_id = uuid.uuid4().hex[:12]
     JOBS[job_id] = {"state": "running", "done": 0, "total": 0, "last": None}
     t = threading.Thread(target=_run_matrix,
-                         args=(job_id, sample_ids, strategy_ids, model, mode),
+                         args=(job_id, sample_ids, strategy_ids, model, mode, api_key),
                          daemon=True)
     t.start()
     return jsonify({"job": job_id})
