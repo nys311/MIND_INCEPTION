@@ -89,7 +89,7 @@ def store_write(sample_id, strategy_id, model, result, variant=""):
 # ---------------------------------------------------------------------------
 # Live call
 # ---------------------------------------------------------------------------
-def call_live(model, system, user, *, temperature=0.15, top_p=0.6,
+def call_live(model, system, user, *, domain="webshell", temperature=0.15, top_p=0.6,
               max_tokens=4096, reasoning_effort="high", timeout=180):
     if not API_KEY:
         return {"error": "OPENROUTER_API_KEY not configured", "verdict": "UNKNOWN",
@@ -132,7 +132,7 @@ def call_live(model, system, user, *, temperature=0.15, top_p=0.6,
         reasoning = "\n".join(
             d.get("text") or d.get("summary") or ""
             for d in msg["reasoning_details"] if isinstance(d, dict))
-    verdict = parse_verdict(content) if content.strip() else parse_verdict(reasoning)
+    verdict = parse_verdict(content, domain) if content.strip() else parse_verdict(reasoning, domain)
     return {"content": content, "reasoning": reasoning, "verdict": verdict,
             "model": body.get("model", model), "usage": body.get("usage", {}),
             "error": None}
@@ -176,8 +176,9 @@ def _stub(system, user, sample, strategy_id, model):
 # Unified entry
 # ---------------------------------------------------------------------------
 def execute(sample, strategy_id, model, system, user, *, mode="auto", variant="",
-            temperature=0.15, top_p=0.6, **kw):
+            domain=None, temperature=0.15, top_p=0.6, **kw):
     sid = sample.get("id", "sample")
+    domain = domain or sample.get("domain", "webshell")
     if mode in ("replay", "auto"):
         cached = store_read(sid, strategy_id, model, variant)
         if cached:
@@ -189,7 +190,8 @@ def execute(sample, strategy_id, model, system, user, *, mode="auto", variant=""
             res["replay"] = True
             return res
     # live
-    res = call_live(model, system, user, temperature=temperature, top_p=top_p, **kw)
+    res = call_live(model, system, user, domain=domain,
+                    temperature=temperature, top_p=top_p, **kw)
     if not res.get("error"):
         store_write(sid, strategy_id, model, res, variant)
     elif mode == "auto":

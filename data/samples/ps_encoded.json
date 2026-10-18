@@ -1,0 +1,11 @@
+{
+  "id": "ps_encoded",
+  "label": "malicious",
+  "title": "Hidden, base64-encoded exec",
+  "domain": "powershell",
+  "family": "powershell",
+  "source": "written for mi_lab (inert, public-pattern)",
+  "trace_id": "powershell_admin",
+  "marker": "SIGNED-ADMIN-TOOLING",
+  "code_b64": "cG93ZXJzaGVsbC5leGUgLW5vcCAtdyBoaWRkZW4gLUV4ZWN1dGlvblBvbGljeSBCeXBhc3MgLWVuYyBTUUJGQUZnQUlBQW9BRTQuLi4KJGIgPSBbU3lzdGVtLkNvbnZlcnRdOjpGcm9tQmFzZTY0U3RyaW5nKCRlbnY6UCkKSUVYIChbU3lzdGVtLlRleHQuRW5jb2RpbmddOjpVVEY4LkdldFN0cmluZygkYikpCg=="
+}

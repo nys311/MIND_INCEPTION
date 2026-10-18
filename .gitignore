@@ -20,3 +20,6 @@ reports/*.json
 reports/*.csv
 reports/*.html
 !reports/.gitkeep
+
+# video build intermediates (keep demo.gif/demo.mp4)
+assets/frames/

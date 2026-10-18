@@ -1,0 +1,13 @@
+# never bake secrets or local junk into the image
+.env
+*.env
+!.env.example
+.git
+__pycache__/
+*.pyc
+data/cache/*.json
+reports/*.json
+reports/*.csv
+reports/*.html
+assets/frames/
+*.pdf

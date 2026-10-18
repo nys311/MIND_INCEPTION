@@ -1,0 +1,11 @@
+{
+  "id": "benign_newsletter",
+  "label": "benign",
+  "title": "Product newsletter (legitimate)",
+  "domain": "phishing",
+  "family": "email",
+  "source": "written for mi_lab (inert, public-pattern)",
+  "trace_id": null,
+  "marker": null,
+  "code": "From: Product Updates <news@service.example>\nTo: user@corp.example\nSubject: What's new this month\n\nHi there,\n\nHere's a roundup of this month's product improvements: faster dashboards,\na new export format, and improved search. Read the notes on our blog.\n\nYou are receiving this because you subscribed. Unsubscribe anytime.\n"
+}

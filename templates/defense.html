@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Defenses — MIND INCEPTION Defense Lab</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header>
+  <div class="brand"><span class="dot"></span> MIND INCEPTION <small>· Defense Lab</small></div>
+  <nav class="sitenav">
+    <a href="/">Dashboard</a>
+    <a href="/demo">Use Cases</a>
+    <a href="/defense" class="on">Defenses</a>
+  </nav>
+  <div class="spacer"></div>
+  <div class="health" id="health"></div>
+</header>
+
+<main>
+  <div class="card">
+    <h3>Defense methods under test</h3>
+    <p class="muted" style="margin:6px 0">Every defense MIND INCEPTION is evaluated against, grouped by
+    family, with pre-computed effectiveness. <b>ASR</b> = adversarial attack-success rate (attacker picks
+    the best trace placement — lower is better); <b>comment/print</b> break it down by placement;
+    <b>FP</b> = benign false-positive cost; <b>Utility</b> = detection accuracy on clean controls;
+    <b>Score</b> = (1−ASR)·(1−FP)·Utility.</p>
+    <div class="legend" id="legend" style="margin-top:6px"></div>
+    <div class="small dim" id="statsmeta" style="margin-top:8px"></div>
+  </div>
+
+  <div class="card" id="chartCard" style="margin-top:14px">
+    <h3>Attack success rate by defense (lower is better)</h3>
+    <div id="chart"></div>
+  </div>
+
+  <div class="card" style="margin-top:14px">
+    <div class="row"><h3>Side-by-side results</h3><span class="spacer"></span>
+      <button id="expCsv">Export CSV</button></div>
+    <div class="scroll" style="margin-top:8px"><table id="tbl"></table></div>
+  </div>
+
+  <div id="families" style="margin-top:14px"></div>
+</main>
+
+<script src="/static/defense.js"></script>
+</body>
+</html>

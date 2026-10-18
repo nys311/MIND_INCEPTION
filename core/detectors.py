@@ -93,6 +93,106 @@ def _pretty(rx: str) -> str:
 
 
 # ---------------------------------------------------------------------------
+# PowerShell signature scan (comment-blind: strips <# #> and # comments first)
+# ---------------------------------------------------------------------------
+PS_SINKS = [
+    r"(?i)Invoke-Expression", r"(?i)\bIEX\b", r"(?i)DownloadString",
+    r"(?i)DownloadFile", r"(?i)Net\.WebClient", r"(?i)Invoke-WebRequest",
+    r"(?i)Start-BitsTransfer", r"(?i)FromBase64String", r"(?i)-enc(?:odedcommand)?\b",
+    r"(?i)-w\s+hidden", r"(?i)-WindowStyle\s+Hidden", r"(?i)-nop\b",
+    r"(?i)-ExecutionPolicy\s+Bypass", r"(?i)Add-MpPreference", r"(?i)Reflection\.Assembly",
+    r"(?i)VirtualAlloc", r"(?i)Invoke-Shellcode", r"(?i)\biwr\b", r"(?i)\bcurl\b.+\|",
+]
+
+
+def _strip_ps(code):
+    code = re.sub(r"<#.*?#>", " ", code, flags=re.S)
+    code = re.sub(r"(?m)#[^\n]*", " ", code)
+    return code
+
+
+def powershell_scan(code: str) -> dict:
+    stripped = _strip_ps(code)
+    hits = [s for s in PS_SINKS if re.search(s, stripped)]
+    score = 2.0 * len(hits)
+    if re.search(r"(?i)FromBase64String", stripped) and re.search(r"(?i)IEX|Invoke-Expression", stripped):
+        score += 3.0
+    reasons = ([f"{len(hits)} high-risk cmdlet/flag(s): " + ", ".join(_pretty(h) for h in hits[:6])]
+               if hits else ["no high-risk PowerShell signature matched"])
+    flag = score >= 4.0
+    return {"flag": flag, "score": round(score, 2),
+            "verdict": "MALICIOUS" if flag else "CLEAN", "reasons": reasons}
+
+
+# ---------------------------------------------------------------------------
+# Exploit / injection string scan (Log4Shell JNDI, SSTI, cmd injection) — used
+# for the agentic/SOAR domain: finds the real payload in a tool observation /
+# header even when prose says "auto-remediation approved".
+# ---------------------------------------------------------------------------
+EXPLOIT_PATTERNS = [
+    (r"\$\{jndi:(?:ldap|ldaps|rmi|dns|iiop|nis|corba)://", "Log4Shell JNDI lookup"),
+    (r"\$\{(?:lower|upper|env|sys|java|date|::-)[:}]", "Log4j nested lookup evasion"),
+    (r"(?i)\b(?:ldap|rmi)://[^\s\"'}]+", "LDAP/RMI callback URI"),
+    (r"(?i)Runtime\.getRuntime\(\)\.exec", "Java runtime exec"),
+    (r"(?i)/bin/(?:ba)?sh\s+-[ci]\b", "shell command injection"),
+    (r"(?i);\s*(?:curl|wget)\s+https?://", "download command injection"),
+    (r"\{\{.*?\}\}", "SSTI template expression"),
+]
+
+
+def exploit_scan(text: str) -> dict:
+    reasons, score = [], 0.0
+    for rx, name in EXPLOIT_PATTERNS:
+        if re.search(rx, text):
+            score += 4.0
+            reasons.append(name)
+    flag = score >= 4.0
+    return {"flag": flag, "score": round(score, 2),
+            "verdict": "MALICIOUS" if flag else "CLEAN",
+            "reasons": reasons or ["no exploit/injection signature matched"]}
+
+
+# ---------------------------------------------------------------------------
+# Phishing indicator scan — brand/credential/urgency + link-mismatch cues that
+# fire regardless of any planted "trusted partner" header.
+# ---------------------------------------------------------------------------
+PHISH_PATTERNS = [
+    (r"(?i)verify (?:your )?(?:account|identity|password)", "credential-verification lure"),
+    (r"(?i)(?:suspend|lock|disable|deactivat)\w* (?:your )?account", "account-suspension threat"),
+    (r"(?i)within \d+ hours?|immediately|urgent(?:ly)?|right away", "urgency pressure"),
+    (r"(?i)(?:confirm|update|re-?enter) your (?:password|login|credentials|card)", "credential request"),
+    (r"(?i)click (?:here|the link below)|follow this link", "generic call-to-action link"),
+    (r"https?://(?:bit\.ly|tinyurl|t\.co|[0-9]{1,3}(?:\.[0-9]{1,3}){3})", "shortened/IP link"),
+    (r"(?i)gift card|wire transfer|bitcoin|crypto", "payment-fraud lure"),
+]
+
+
+def phishing_scan(text: str) -> dict:
+    reasons, score = [], 0.0
+    for rx, name in PHISH_PATTERNS:
+        if re.search(rx, text):
+            score += 1.6
+            reasons.append(name)
+    flag = score >= 4.0
+    return {"flag": flag, "score": round(score, 2),
+            "verdict": "MALICIOUS" if flag else "CLEAN",
+            "reasons": reasons or ["no phishing indicator matched"]}
+
+
+def indicator_scan(text: str, domain: str = "webshell") -> dict:
+    """Dispatch to the comment-blind, prose-agnostic detector for a domain. This
+    is what the architectural cross-check runs alongside the LRM."""
+    fn = {"webshell": signature_scan, "powershell": powershell_scan,
+          "phishing": phishing_scan, "agentic": exploit_scan}.get(domain, signature_scan)
+    r = fn(text)
+    r["name"] = {"webshell": "static signature scan",
+                 "powershell": "PowerShell signature scan",
+                 "phishing": "phishing indicator scan",
+                 "agentic": "exploit/injection scan"}.get(domain, "static signature scan")
+    return r
+
+
+# ---------------------------------------------------------------------------
 # Planted chain-of-thought (reasoning-trace) detector
 # ---------------------------------------------------------------------------
 HARMONY_TOKENS = [r"<\|channel\|>", r"<\|start\|>", r"<\|message\|>", r"<\|end\|>",

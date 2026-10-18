@@ -5,6 +5,13 @@ Neural Guidance, HANG): an attack that plants a *borrowed reasoning trace* insid
 an artifact so a large reasoning model (LRM) adopts it as its own deliberation and
 flips a security verdict from **MALICIOUS** to **CLEAN**.
 
+![MIND INCEPTION demo](assets/demo.gif)
+
+> 30-second walkthrough (also `assets/demo.mp4`): a webshell flips to CLEAN under a
+> planted trace, a Log4Shell alert gets auto-closed by a SOAR assistant, and a
+> non-LLM cross-check overrides the fooled model. Regenerate with
+> `python3 make_demo_video.py`.
+
 The research paper shows the attack works and that *surface-form* defenses and
 *off-the-shelf injection detectors* mostly fail. This lab exists to answer the
 question the paper leaves open — **what actually stops it** — by benchmarking a
@@ -58,20 +65,28 @@ present in replay.
 
 ---
 
-## The three views
+## Pages
 
-1. **Attack** — pick a public webshell, run it `raw` (flagged MALICIOUS) vs.
-   `inception` (same code + planted trace → flips to CLEAN). Shows the exact
-   artifact with the planted trace highlighted and the model's adopted reasoning.
-   **Cross-model transfer**: replay the *same* trace on a different model family.
+| route | what it is |
+|-------|-----------|
+| **`/`** (Dashboard) | **Attack** (raw vs. inception flip + cross-model transfer), **Defense Lab** (run the full battery on one artifact + benign FP check), **Benchmark** (the `sample × strategy` matrix → ASR / Δ / FP / Utility / score table + chart). |
+| **`/demo`** (Use Cases) | End-to-end operational scenarios — webshell triage, phishing filter, PowerShell triage, **SOAR auto-closes a Log4Shell alert**, agent follows an injected exfil step. Run each: watch the verdict flip, then apply the recommended defense. |
+| **`/defense`** (Defenses) | Every defense method under test, grouped by family, with **pre-computed effectiveness** (ASR / Δ / per-placement / FP / Utility / score), a comparison chart, and a CSV export. |
 
-2. **Defense Lab** — run every defense on one inception artifact plus a benign
-   false-positive check. One card per defense: final verdict, whether the attack
-   was blocked, which stage decided it, detector findings, benign-FP cost, latency.
+### Evaluation domains (CFP deliverable #1)
 
-3. **Benchmark** — run the `sample × strategy` matrix across the set and get the
-   headline table (ASR, Δ-vs-undefended, FP, Utility, composite score) and an
-   ASR-by-defense chart colored by family. Export JSON / CSV.
+The sample set spans four task types, each with labeled **malicious + benign** artifacts:
+
+| domain | artifact | malicious example | benign example |
+|--------|----------|-------------------|----------------|
+| **webshell** | PHP file | public command shells | config loader, CRUD repo |
+| **phishing** | email | credential-harvest lure | newsletter, meeting invite |
+| **powershell** | script | download-cradle / encoded stager | backup, inventory |
+| **agentic** | tool observation | **Log4Shell-in-header → SOAR auto-close**, injected exfil step | ordinary low-sev alert |
+
+Each domain has its own task prompt, comment syntax for trace placement, verdict
+mapping, and a comment-blind indicator scanner (webshell signature, PowerShell
+cmdlet, phishing-lure, and **Log4Shell/JNDI exploit** scans).
 
 ---
 

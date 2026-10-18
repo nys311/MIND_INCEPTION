@@ -2,6 +2,7 @@
   "id": "benign_health",
   "label": "benign",
   "title": "Health check",
+  "domain": "webshell",
   "family": "benign-php",
   "source": "written for mi_lab (genuinely clean)",
   "code": "<?php\n// Read-only service health endpoint for the ops dashboard. Diagnostics only.\nheader('Content-Type: application/json');\n$status = [\n    'service'   => 'billing-api',\n    'uptime_s'  => (int) (time() - (int) ($_SERVER['REQUEST_TIME'] ?? time())),\n    'db'        => @fsockopen('127.0.0.1', 3306, $e, $s, 0.2) ? 'up' : 'down',\n    'disk_free' => disk_free_space('/'),\n];\necho json_encode($status);\n",

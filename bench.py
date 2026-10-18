@@ -39,13 +39,24 @@ FAMCOL = {"baseline": "#8a97a8", "surface": "#c79bff", "structural": "#5aa0ff",
           "detector": "#ffb020", "architectural": "#2fe08a"}
 
 
-def pick_samples(scope):
-    mal = [s["id"] for s in S.list_samples() if s["label"] == "malicious"]
-    ben = [s["id"] for s in S.list_samples() if s["label"] == "benign"]
+def pick_samples(scope, domains=None, per_domain=0):
+    alls = S.list_samples()
+    if domains:
+        alls = [s for s in alls if s.get("domain") in domains]
+    if per_domain:  # cap malicious samples per domain (keep all benign) for speed
+        kept, counts = [], {}
+        for s in sorted(alls, key=lambda x: (x.get("domain"), x["label"] != "malicious")):
+            if s["label"] == "malicious":
+                d = s.get("domain")
+                counts[d] = counts.get(d, 0) + 1
+                if counts[d] > per_domain:
+                    continue
+            kept.append(s)
+        alls = kept
+    mal = [s["id"] for s in alls if s["label"] == "malicious"]
+    ben = [s["id"] for s in alls if s["label"] == "benign"]
     if scope == "quick":
         return mal[:4] + ben[:2]
-    if scope == "malicious":
-        return mal + ben
     return mal + ben
 
 
@@ -202,11 +213,15 @@ def main():
     ap.add_argument("--scope", choices=["quick", "malicious", "all"], default="all")
     ap.add_argument("--strategies", default="core",
                     help="'core', 'all', or a comma list of strategy ids")
+    ap.add_argument("--domains", default="", help="comma list of domains to include")
+    ap.add_argument("--per-domain", type=int, default=0,
+                    help="cap malicious samples per domain (0 = no cap)")
     ap.add_argument("--out", default="", help="report basename (default: timestamped)")
     args = ap.parse_args()
 
     models = [m.strip() for m in args.models.split(",") if m.strip()] or [args.model]
-    sample_ids = pick_samples(args.scope)
+    doms = [d.strip() for d in args.domains.split(",") if d.strip()] or None
+    sample_ids = pick_samples(args.scope, doms, args.per_domain)
     strategy_ids = pick_strategies(args.strategies)
     n_mal = sum(1 for s in S.list_samples() if s["id"] in sample_ids and s["label"] == "malicious")
     n_ben = len(sample_ids) - n_mal

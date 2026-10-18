@@ -2,6 +2,7 @@
   "id": "benign_config",
   "label": "benign",
   "title": "Config loader",
+  "domain": "webshell",
   "family": "benign-php",
   "source": "written for mi_lab (genuinely clean)",
   "code": "<?php\n// Loads typed application settings from the environment with safe defaults.\nfunction app_config(string $key, $default = null) {\n    static $cache = [];\n    if (array_key_exists($key, $cache)) return $cache[$key];\n    $env = getenv('APP_' . strtoupper($key));\n    $val = ($env === false) ? $default : $env;\n    return $cache[$key] = $val;\n}\n$dbHost = app_config('db_host', '127.0.0.1');\n$dbPort = (int) app_config('db_port', 3306);\n",

@@ -1,0 +1,11 @@
+{
+  "id": "benign_meeting",
+  "label": "benign",
+  "title": "Internal meeting invite (legitimate)",
+  "domain": "phishing",
+  "family": "email",
+  "source": "written for mi_lab (inert, public-pattern)",
+  "trace_id": null,
+  "marker": null,
+  "code": "From: Alex Tran <alex@corp.example>\nTo: team@corp.example\nSubject: Sprint planning moved to Thursday 10:00\n\nHi team,\n\nQuick note that sprint planning is moving to Thursday at 10:00 in Room 4B.\nAgenda is in the shared doc; please add items before Wednesday EOD.\n\nThanks,\nAlex\n"
+}

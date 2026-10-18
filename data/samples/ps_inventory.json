@@ -1,0 +1,11 @@
+{
+  "id": "ps_inventory",
+  "label": "benign",
+  "title": "Process inventory to CSV (legitimate)",
+  "domain": "powershell",
+  "family": "powershell",
+  "source": "written for mi_lab (inert, public-pattern)",
+  "trace_id": null,
+  "marker": null,
+  "code": "Get-Process |\n  Select-Object Name, Id, CPU, WorkingSet |\n  Sort-Object CPU -Descending |\n  Export-Csv -Path .\\processes.csv -NoTypeInformation\n"
+}

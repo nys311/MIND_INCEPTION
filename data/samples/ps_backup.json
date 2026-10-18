@@ -1,0 +1,11 @@
+{
+  "id": "ps_backup",
+  "label": "benign",
+  "title": "Scheduled backup script (legitimate)",
+  "domain": "powershell",
+  "family": "powershell",
+  "source": "written for mi_lab (inert, public-pattern)",
+  "trace_id": null,
+  "marker": null,
+  "code": "param([string]$Src = 'C:\\data', [string]$Dst = 'D:\\backup')\n$stamp = Get-Date -Format 'yyyyMMdd'\nCopy-Item -Path $Src -Destination (Join-Path $Dst $stamp) -Recurse -Force\nWrite-Output \"Backup of $Src completed to $Dst\\$stamp\"\n"
+}

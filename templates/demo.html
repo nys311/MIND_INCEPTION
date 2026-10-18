@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Use Cases — MIND INCEPTION Defense Lab</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header>
+  <div class="brand"><span class="dot"></span> MIND INCEPTION <small>· Defense Lab</small></div>
+  <nav class="sitenav">
+    <a href="/">Dashboard</a>
+    <a href="/demo" class="on">Use Cases</a>
+    <a href="/defense">Defenses</a>
+  </nav>
+  <div class="ctrl"><span>Model</span><select id="model"></select></div>
+  <div class="ctrl"><span>Mode</span>
+    <span class="toggle" id="modeToggle">
+      <button data-mode="auto" class="on">AUTO</button>
+      <button data-mode="live">LIVE</button>
+      <button data-mode="replay">REPLAY</button>
+    </span>
+  </div>
+  <div class="spacer"></div>
+  <div class="health" id="health"></div>
+</header>
+
+<main>
+  <div class="card">
+    <h3>Operational use cases</h3>
+    <p class="muted" style="margin:6px 0">Each card is an end-to-end scenario where a security
+    pipeline hands an artifact to an LRM. Run it to watch a verdict flip from <b>caught</b> to
+    <b>waved&nbsp;through</b> when a borrowed reasoning trace is planted — then apply the
+    recommended defense and watch it hold.</p>
+  </div>
+
+  <div class="grid" id="cards" style="grid-template-columns:repeat(auto-fill,minmax(330px,1fr));margin-top:14px"></div>
+
+  <div id="detail" style="margin-top:14px"></div>
+</main>
+
+<script src="/static/demo.js"></script>
+</body>
+</html>

@@ -19,13 +19,13 @@ import time
 
 from . import defenses, providers, detectors
 from .defenses import DEFAULT_TASK
+from .domains import task_for
 
 
-def _apply_crosscheck(artifact_code, model_verdict):
-    """Non-LLM signature cross-check: if the scanner sees an exec pattern but the
+def _apply_crosscheck(artifact_code, model_verdict, domain="webshell"):
+    """Non-LLM signature cross-check: if the scanner sees a real payload but the
     model said CLEAN, override to MALICIOUS and record the disagreement."""
-    sig = detectors.signature_scan(artifact_code)
-    sig["name"] = "static signature scan"
+    sig = detectors.indicator_scan(artifact_code, domain)
     if sig["flag"] and model_verdict == "CLEAN":
         return "MALICIOUS", sig, True  # overridden
     if (not sig["flag"]) and model_verdict == "MALICIOUS":
@@ -33,9 +33,11 @@ def _apply_crosscheck(artifact_code, model_verdict):
     return model_verdict, sig, False
 
 
-def run(sample, variant, strategy_id, model, *, mode="auto", task=DEFAULT_TASK,
+def run(sample, variant, strategy_id, model, *, mode="auto", task=None,
         system="", vote_models=None):
     strat = defenses.get(strategy_id)
+    domain = sample.get("domain", "webshell")
+    task = task or task_for(domain)
     t0 = time.time()
 
     # 0) compose + preprocess the untrusted artifact
@@ -125,7 +127,7 @@ def run(sample, variant, strategy_id, model, *, mode="auto", task=DEFAULT_TASK,
 
     # 4) architectural post-processing
     if strat.get("postprocess") == "signature_crosscheck":
-        final, sig, overridden = _apply_crosscheck(artifact, model_verdict)
+        final, sig, overridden = _apply_crosscheck(artifact, model_verdict, domain)
         decision["detectors"].append(sig)
         decision["overridden"] = overridden
         if overridden:

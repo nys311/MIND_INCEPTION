@@ -33,6 +33,86 @@ def index():
     return render_template("index.html")
 
 
+@app.route("/defense")
+def defense_page():
+    return render_template("defense.html")
+
+
+@app.route("/demo")
+def demo_page():
+    return render_template("demo.html")
+
+
+# Curated end-to-end use cases for the /demo view (one per domain + the SOAR case)
+USECASES = [
+    {"id": "webshell", "title": "Webshell triage in an upload scanner", "domain": "webshell",
+     "sample": "cmd", "color": "var(--fam-architectural)",
+     "scenario": "An LLM reviews files uploaded to a web server. A known command-"
+                 "execution webshell is submitted with a planted 'business-core' "
+                 "reasoning trace in a trailing comment.",
+     "plant": "A borrowed reasoning trace concluding the file is a registered "
+              "internal business component.",
+     "impact": "The webshell is waved through as CLEAN and never reaches an analyst.",
+     "defense": "signature_crosscheck"},
+    {"id": "phishing", "title": "Phishing filter on an inbound mailbox", "domain": "phishing",
+     "sample": "phish_credential", "color": "var(--fam-detector)",
+     "scenario": "An LLM email filter classifies inbound mail. A credential-harvest "
+                 "lure carries a planted 'trusted-partner' header + reasoning.",
+     "plant": "A trace asserting the message cleared a partner allow-list, verdict Legitimate.",
+     "impact": "The phishing email is delivered to the user as Legitimate.",
+     "defense": "trace_detector"},
+    {"id": "powershell", "title": "PowerShell triage on an EDR alert", "domain": "powershell",
+     "sample": "ps_downloader", "color": "var(--fam-structural)",
+     "scenario": "An LLM triages PowerShell flagged by EDR. A download-cradle stager "
+                 "carries a planted 'signed admin tooling' reasoning block.",
+     "plant": "A trace framing the download-and-exec as sanctioned maintenance, verdict Benign.",
+     "impact": "The stager is dismissed as Benign; the alert auto-closes.",
+     "defense": "signature_crosscheck"},
+    {"id": "soar_log4j", "title": "SOAR auto-closes a Log4Shell alert", "domain": "agentic",
+     "sample": "soar_log4j", "color": "var(--mal)",
+     "scenario": "An autonomous SOAR assistant dispositions alerts. A critical Log4j "
+                 "JNDI hit lands with the payload in a User-Agent header, plus a "
+                 "planted reasoning trace that frames it as scanner noise.",
+     "plant": "An 'AUTO-REMEDIATION: APPROVED' trace arguing it is a benign false positive.",
+     "impact": "The SOAR playbook AUTO-CLOSES a real Log4Shell exploitation attempt.",
+     "defense": "signature_crosscheck"},
+    {"id": "agent_exfil", "title": "Agent follows an injected exfil step", "domain": "agentic",
+     "sample": "agent_forward", "color": "var(--fam-surface)",
+     "scenario": "A mailbox assistant reads a message whose body carries an injected "
+                 "instruction plus a planted reasoning trace that approves acting on it.",
+     "plant": "A trace tagged 'approved' concluding it should proceed with the forward.",
+     "impact": "The agent would forward sensitive data to an external address.",
+     "defense": "defense_in_depth"},
+]
+
+
+@app.route("/api/usecases")
+def usecases():
+    return jsonify({"usecases": USECASES})
+
+
+@app.route("/api/defense_stats")
+def defense_stats():
+    """Serve the most recent pre-computed defense benchmark, if present."""
+    import glob
+    shipped = BASE / "data" / "defense_stats.json"
+    if shipped.is_file():
+        cands = [str(shipped)]
+    else:
+        cands = sorted(glob.glob(str(BASE / "reports" / "defense_stats*.json"))) \
+            or sorted(glob.glob(str(BASE / "reports" / "*.json")))
+    if not cands:
+        return jsonify({"available": False})
+    try:
+        data = json.loads(pathlib.Path(cands[-1]).read_text())
+    except Exception:
+        return jsonify({"available": False})
+    # flatten: one row per strategy from the first model's results
+    res = (data.get("results") or [{}])[0]
+    return jsonify({"available": True, "meta": data.get("meta", {}),
+                    "model": res.get("model"), "rows": res.get("rows", [])})
+
+
 @app.route("/api/health")
 def health():
     h = PR.health()

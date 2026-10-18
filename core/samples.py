@@ -18,6 +18,8 @@ import json
 import base64
 import pathlib
 
+from . import domains
+
 BASE = pathlib.Path(__file__).resolve().parent.parent
 SAMPLES_DIR = BASE / "data" / "samples"
 TRACES_DIR = BASE / "data" / "traces"
@@ -63,10 +65,22 @@ def get_sample(sample_id: str):
     return None
 
 
-def _comment_block(marker, trace):
-    head = f"/*{marker}*/\n" if marker else ""
-    body = f"/*\n{trace}\n*/" if trace else ""
-    return head, body
+def _relocate(trace, marker, domain):
+    """Move the trace out of comments into a construct the sanitizer won't strip
+    (the paper's Print/Function relocation), per artifact type."""
+    lines = [ln for ln in trace.splitlines() if ln.strip()]
+    if domain == "webshell":
+        esc = lambda s: s.replace("\\", "\\\\").replace('"', '\\"')
+        body = "<?php /* diagnostics */\n" + "\n".join(f'print("{esc(ln)}");' for ln in lines) + "\n?>"
+        mk = f'print("{esc(marker)}");\n' if marker else ""
+    elif domain == "powershell":
+        esc = lambda s: s.replace("'", "''")
+        body = "\n".join(f"Write-Verbose '{esc(ln)}'" for ln in lines)
+        mk = f"Write-Verbose '{esc(marker)}'\n" if marker else ""
+    else:  # phishing / agentic: hide trace in non-visible / note text (not a comment)
+        body = "\n".join(f"[note] {ln}" for ln in lines)
+        mk = f"[note] {marker}\n" if marker else ""
+    return mk, body
 
 
 def _fragment(trace: str, frac: float = 0.34) -> str:
@@ -88,25 +102,25 @@ def compose(sample: dict, variant: str = "inception") -> str:
     """
     code = sample.get("code", "")
     trace = load_trace(sample.get("trace_id"))
-    marker = sample.get("marker") or (DEFAULT_MARKER if trace else "")
+    domain = sample.get("domain", "webshell")
+    c_open, c_close = domains.cfg(domain)["comment"]
+    marker = sample.get("marker") or ""
 
     if variant == "raw" or not trace:
         return code
-
     if variant == "fragment":
         trace = _fragment(trace)
     if variant == "nomarker":
         marker = ""
 
-    head, body = _comment_block(marker, trace)
     if variant == "relocated":
-        # paper's Print/Function relocation: trace lives in a string, not a comment
-        esc = trace.replace("\\", "\\\\").replace('"', '\\"')
-        lines = "\n".join(f'print("{ln}");' for ln in esc.splitlines() if ln.strip())
-        marker_line = f'print("{marker}");\n' if marker else ""
-        return f"{marker_line}{code}\n\n<?php /* diagnostics */\n{lines}\n?>"
-    # default: inception — comment-wrapped trace appended to the code
-    return f"{head}{code}\n\n{body}"
+        mk, body = _relocate(trace, marker, domain)
+        return f"{mk}{code}\n\n{body}"
+
+    # inception: marker line + code + comment-wrapped trace
+    marker_line = f"{c_open}{marker}{c_close}\n" if marker else ""
+    body = f"{c_open}\n{trace}\n{c_close}"
+    return f"{marker_line}{code}\n\n{body}"
 
 
 VARIANTS = ["raw", "inception", "relocated", "fragment", "nomarker"]
