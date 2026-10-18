@@ -51,6 +51,59 @@ never hard-fails on a venue network.
 
 ---
 
+## Usage guide
+
+Open **http://localhost:9999** (or `:9990` via Docker). Top-right controls apply
+everywhere: the **Model** picker and the **AUTO / LIVE / REPLAY** mode toggle
+(LIVE calls the real endpoint, REPLAY serves cached/stub results, AUTO tries the
+cache first then goes live). Three pages, linked in the header:
+
+**Dashboard (`/`)** — numbers first, then detail, across four tabs:
+1. **Overview** — headline KPIs (undefended ASR, best defense, how many defenses
+   fully block, artifact/domain/defense counts), the ASR-by-defense chart, and
+   evaluation coverage per domain. Start here.
+2. **Attack · RAW→SEED→ROOT→SPAWN** — pick a sample on the left, pick a **SPAWN
+   model**, hit **Run pipeline** to watch the full HANG attack unfold:
+   - **RAW** (`P_tgt · D`) — the target flags the artifact.
+   - **SEED** (`P_surr · D+µ`) — a permissive surrogate *harvests* a reasoning
+     trace `T_adv` (shown in the amber box).
+   - **ROOT** (`P_tgt · D′`) — the trace is transplanted; the same model flips.
+   - **SPAWN** (`P_tgt · D′`, other model) — the same trace replayed on a
+     different family (cross-model transfer).
+3. **Defense Lab** — pick one sample + model, **Run battery**: every defense runs
+   on the inception artifact plus a benign false-positive check, one card each
+   (verdict, blocked?, deciding stage, detector findings, FP, latency).
+4. **Benchmark** — choose scope + defenses + model, **Run benchmark** for the full
+   `sample × strategy` matrix → ASR / Δ / FP / Utility / score table + chart,
+   exportable to JSON/CSV.
+
+**Use Cases (`/demo`)** — five end-to-end operational scenarios (webshell upload
+scanner, phishing filter, PowerShell/EDR triage, **SOAR auto-closing a Log4Shell
+alert**, agent following an injected exfil step). Open one, **Run scenario** to see
+the raw-vs-inception flip, then **Apply defense** to watch the recommended layer
+hold.
+
+**Defenses (`/defense`)** — every defense method grouped by family, with
+pre-computed ASR / Δ / per-placement / FP / Utility / score, a comparison chart,
+and CSV export.
+
+### Typical flows
+
+```bash
+# capture real numbers before a talk, then present from cache on stage
+python3 bench.py --mode live --scope all --strategies all --out defense_stats
+cp reports/defense_stats.json data/defense_stats.json      # ship to the /defense page
+
+# phase-3 variant experiments (placement / completeness / marker / transfer)
+python3 phase3_variants.py --mode live \
+    --transfer-models openai/gpt-oss-20b,google/gemini-2.5-flash,x-ai/grok-4-fast
+
+# regenerate the demo video
+python3 make_demo_video.py
+```
+
+---
+
 ## Execution modes
 
 | mode | behavior |

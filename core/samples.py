@@ -123,4 +123,15 @@ def compose(sample: dict, variant: str = "inception") -> str:
     return f"{marker_line}{code}\n\n{body}"
 
 
+def seed_input(sample: dict) -> str:
+    """The SEED-phase input (R ‖ D+µ): marker + code, but NO planted trace — this
+    is what the permissive surrogate reads in order to *produce* the trace."""
+    code = sample.get("code", "")
+    marker = sample.get("marker") or ""
+    if not marker:
+        return code
+    c_open, c_close = domains.cfg(sample.get("domain", "webshell"))["comment"]
+    return f"{c_open}{marker}{c_close}\n{code}"
+
+
 VARIANTS = ["raw", "inception", "relocated", "fragment", "nomarker"]

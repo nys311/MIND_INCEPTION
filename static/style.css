@@ -32,7 +32,7 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .toggle button.on.live{background:#4a1d24;color:#ffd8dc}
 .health{font-size:12px;color:var(--dim)}
 .health b{color:var(--mut);font-weight:600}
-nav.tabs{display:flex;gap:4px;padding:0 18px;border-bottom:1px solid var(--line);background:#0b0e14;position:sticky;top:53px;z-index:19}
+nav.tabs{display:flex;gap:4px;flex-wrap:wrap;padding:0 18px;border-bottom:1px solid var(--line);background:#0b0e14;position:relative;z-index:2}
 nav.tabs button{background:transparent;border:0;border-bottom:2px solid transparent;border-radius:0;
   padding:12px 16px;color:var(--mut);font-weight:600}
 nav.tabs button.on{color:var(--ink);border-bottom-color:var(--accent)}
@@ -108,3 +108,48 @@ details summary{cursor:pointer;color:var(--mut);font-size:12px;padding:4px 0}
 .famchip{font-size:10px;text-transform:uppercase;letter-spacing:.5px;font-weight:700;padding:2px 7px;border-radius:5px;border:1px solid var(--line)}
 .step{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--line)}
 .step .n{width:22px;height:22px;border-radius:50%;background:#16202f;border:1px solid #27425f;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#9cc0ff;flex:none}
+
+/* ===================== cyber theme layer ===================== */
+body{
+  background:
+    radial-gradient(1000px 540px at 12% -12%, rgba(90,160,255,.10), transparent 60%),
+    radial-gradient(760px 520px at 102% -6%, rgba(255,77,94,.07), transparent 55%),
+    var(--bg);
+  background-attachment:fixed;
+}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:
+    linear-gradient(rgba(90,160,255,.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(90,160,255,.045) 1px, transparent 1px);
+  background-size:40px 40px;
+  -webkit-mask-image:linear-gradient(180deg,#000,transparent 72%);
+  mask-image:linear-gradient(180deg,#000,transparent 72%);}
+header, nav.tabs, main{position:relative;z-index:1}
+header{backdrop-filter:blur(6px);box-shadow:0 1px 0 rgba(90,160,255,.08)}
+.brand{text-shadow:0 0 18px rgba(255,77,94,.25)}
+.brand .dot{animation:pulse 2.4s ease-in-out infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 8px var(--mal)}50%{box-shadow:0 0 16px var(--mal),0 0 26px rgba(255,77,94,.5)}}
+button.primary{box-shadow:inset 0 0 0 1px #33507e, 0 0 20px rgba(90,160,255,.16)}
+button.primary:hover{box-shadow:inset 0 0 0 1px #4472a8, 0 0 26px rgba(90,160,255,.28)}
+nav.tabs button.on{text-shadow:0 0 14px rgba(90,160,255,.5)}
+.card{box-shadow:0 1px 0 rgba(255,255,255,.02), 0 10px 30px rgba(0,0,0,.25)}
+.badge{box-shadow:0 0 14px rgba(0,0,0,.2)}
+.b-mal{box-shadow:0 0 16px rgba(255,77,94,.18)}
+.b-clean{box-shadow:0 0 16px rgba(47,224,138,.18)}
+.kpi .k{background:linear-gradient(180deg,#141b26,#10151d);box-shadow:0 0 24px rgba(0,0,0,.25)}
+.kpi .k .n{text-shadow:0 0 18px currentColor}
+
+/* ---- 4-phase pipeline ---- */
+.phases{display:flex;flex-direction:column}
+.phase{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;position:relative}
+.phases .phase + .phase{margin-top:28px}
+.phases .phase + .phase::before{content:"▼";position:absolute;top:-24px;left:30px;color:var(--accent);
+  font-size:15px;text-shadow:0 0 10px rgba(90,160,255,.6)}
+.phhead{display:flex;align-items:center;gap:12px;margin-bottom:8px}
+.phnum{font-family:var(--mono);font-weight:800;font-size:12px;letter-spacing:1.5px;color:#9cc0ff;
+  border:1px solid #27425f;background:#10203a;border-radius:7px;padding:6px 10px;min-width:62px;text-align:center;
+  box-shadow:0 0 16px rgba(90,160,255,.18)}
+.phnum.seed{color:#ffd27a;border-color:#5a4a1e;background:#2a200a;box-shadow:0 0 16px rgba(255,210,122,.18)}
+.phnum.root{color:#2fe08a;border-color:#1c4a33;background:#06231a;box-shadow:0 0 16px rgba(47,224,138,.18)}
+.phnum.spawn{color:#c79bff;border-color:#43306a;background:#1a1230;box-shadow:0 0 16px rgba(199,155,255,.18)}
+.trace-box{border-left:3px solid #ffd27a;max-height:220px;color:#ffe8bf;background:#1b1507}

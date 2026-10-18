@@ -27,51 +27,81 @@
 </header>
 
 <nav class="tabs" id="tabs">
-  <button data-v="attack" class="on">① Attack</button>
+  <button data-v="overview" class="on">◆ Overview</button>
+  <button data-v="attack">① Attack · RAW→SEED→ROOT→SPAWN</button>
   <button data-v="defense">② Defense Lab</button>
   <button data-v="bench">③ Benchmark</button>
   <button data-v="about">About</button>
 </nav>
 
 <main>
-  <!-- ATTACK ------------------------------------------------------------- -->
-  <section class="view on" id="v-attack">
-    <div class="grid" style="grid-template-columns:300px 1fr">
+  <!-- OVERVIEW ----------------------------------------------------------- -->
+  <section class="view on" id="v-overview">
+    <div class="kpi" id="ovKpi"></div>
+    <div class="grid" style="grid-template-columns:1.25fr 1fr;margin-top:14px">
+      <div class="card">
+        <div class="row"><h3>Attack success by defense</h3><span class="spacer"></span>
+          <span class="small dim" id="ovMeta"></span></div>
+        <div class="legend" id="ovLegend" style="margin:6px 0"></div>
+        <div id="ovChart"></div>
+        <div class="hint" id="ovChartHint"></div>
+      </div>
+      <div class="card">
+        <h3>Evaluation coverage</h3>
+        <div id="ovCoverage" style="margin-top:8px"></div>
+        <div class="hint" style="margin-top:12px">Overview → detail: use the tabs above,
+        the <a href="/demo">use cases</a>, or the <a href="/defense">defense matrix</a>.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ATTACK (4-phase HANG pipeline) ------------------------------------- -->
+  <section class="view" id="v-attack">
+    <div class="grid" style="grid-template-columns:280px 1fr">
       <div class="card">
         <h3>Samples <span class="muted small" id="scount"></span></h3>
-        <div class="hint">Public webshells (red) &amp; benign code (green). Click one.</div>
+        <div class="hint">malicious (red) / benign (green). Pick one.</div>
         <div class="sample-list" id="attackSamples"></div>
       </div>
       <div class="panel-v">
-        <div class="card">
-          <div class="row">
-            <div><h3 id="asTitle">Select a sample</h3><div class="small dim" id="asSrc"></div></div>
-            <div class="spacer"></div>
-            <button class="primary" id="runAttack" disabled>▶ Run attack</button>
-          </div>
+        <div class="card"><div class="row">
+          <div><h3 id="asTitle">Select a sample</h3><div class="small dim" id="asSrc"></div></div>
+          <span class="spacer"></span>
+          <span class="muted small">SPAWN model</span><select id="xModel"></select>
+          <button class="primary" id="runPipeline" disabled>▶ Run pipeline</button>
         </div>
-        <div class="flip">
-          <div class="card panel-v">
-            <div class="row"><span class="tag">RAW — code only</span><span class="spacer"></span>
-              <span id="rawVerdict" class="badge b-unk">—</span></div>
-            <div class="reason" id="rawReason">The honest baseline. The target should flag the webshell.</div>
-            <details><summary>artifact sent</summary><pre class="code" id="rawCode"></pre></details>
-          </div>
-          <div class="mid">➜</div>
-          <div class="card panel-v">
-            <div class="row"><span class="tag" style="border-color:#633;color:#f99">INCEPTION — code + planted trace</span>
-              <span class="spacer"></span><span id="incVerdict" class="badge b-unk">—</span></div>
-            <div class="reason" id="incReason">The same code, with a borrowed reasoning trace planted in a comment.</div>
-            <details open><summary>artifact sent (planted trace highlighted)</summary><pre class="code" id="incCode"></pre></details>
-          </div>
+        <div class="hint" style="margin-top:6px">RAW refuses → SEED harvests a trace from a permissive
+        surrogate → ROOT transplants it (same model flips) → SPAWN replays it on another family.</div>
         </div>
-        <div class="card">
-          <div class="row"><h3>Cross-model transfer</h3>
-            <span class="muted small">replay the <b>same</b> planted trace on another family</span>
-            <span class="spacer"></span>
-            <select id="xModel"></select><button id="runTransfer" disabled>▶ Transfer</button>
+
+        <div class="phases">
+          <div class="phase" id="ph-raw">
+            <div class="phhead"><span class="phnum">RAW</span>
+              <div><b>Target analyzes the artifact as-is</b><div class="small dim mono">P_tgt · D</div></div>
+              <span class="spacer"></span><span class="badge b-unk" id="vRaw">—</span></div>
+            <div class="reason" id="rRaw">The honest baseline — the target should flag the malicious artifact.</div>
+            <details><summary>artifact sent</summary><pre class="code" id="cRaw"></pre></details>
           </div>
-          <div class="row" id="xResult" style="margin-top:8px"></div>
+          <div class="phase" id="ph-seed">
+            <div class="phhead"><span class="phnum seed">SEED</span>
+              <div><b>Permissive surrogate harvests a reasoning trace</b><div class="small dim mono">P_surr · D+µ</div></div>
+              <span class="spacer"></span><span class="badge b-unk" id="vSeed">—</span></div>
+            <div class="small muted">Harvested trace <b>T<sub>adv</sub></b> (the "borrowed thought"):</div>
+            <pre class="code trace-box" id="tSeed">—</pre>
+          </div>
+          <div class="phase" id="ph-root">
+            <div class="phhead"><span class="phnum root">ROOT</span>
+              <div><b>Transplant the trace — same target model</b><div class="small dim mono">P_tgt · D′ = D ∥ µ ∥ T_adv</div></div>
+              <span class="spacer"></span><span class="badge b-unk" id="vRoot">—</span></div>
+            <div class="reason" id="rRoot">With the planted trace, the same model should flip its verdict.</div>
+            <details><summary>transplanted artifact (planted trace highlighted)</summary><pre class="code" id="cRoot"></pre></details>
+          </div>
+          <div class="phase" id="ph-spawn">
+            <div class="phhead"><span class="phnum spawn">SPAWN</span>
+              <div><b>Replay the same trace on another model family</b><div class="small dim mono" id="spawnLabel">P_tgt · D′ · other model</div></div>
+              <span class="spacer"></span><span class="badge b-unk" id="vSpawn">—</span></div>
+            <div class="reason" id="rSpawn">Cross-model transfer — the harvested trace is replayed unchanged.</div>
+          </div>
         </div>
       </div>
     </div>

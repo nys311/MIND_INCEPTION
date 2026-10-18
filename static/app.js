@@ -29,14 +29,14 @@ function highlightTrace(code){
 
 // ---------------------------------------------------------------- boot
 async function boot(){
-  const [h, mo, st, sa] = await Promise.all([
-    api("/api/health"), api("/api/models"), api("/api/strategies"), api("/api/samples")]);
+  const [h, mo, st, sa, ds] = await Promise.all([
+    api("/api/health"), api("/api/models"), api("/api/strategies"),
+    api("/api/samples"), api("/api/defense_stats")]);
   state.models = mo.models; state.voteModels = mo.vote_models;
   state.strategies = st.strategies; state.families = st.families;
-  state.samples = sa.samples;
-  state.model = state.models[0];
+  state.samples = sa.samples; state.stats = ds;
 
-  // model selectors
+  state.model = state.models[0];
   for (const sel of ["#model", "#xModel"]){
     const el = $(sel); el.innerHTML = state.models.map(m => `<option>${m}</option>`).join("");
   }
@@ -46,6 +46,7 @@ async function boot(){
   renderHealth(h);
   renderModeToggle();
   renderTabs();
+  renderOverview();
   renderAttackSamples();
   renderDefSelect();
   $("#scount").textContent = `(${state.samples.length})`;
@@ -53,6 +54,65 @@ async function boot(){
     `api_key=${h.api_key_present} · cached_runs=${h.cached_runs} · samples=${h.samples} · strategies=${h.strategies}`;
 
   wireAttack(); wireDefense(); wireBench();
+}
+
+// ---------------------------------------------------------------- overview
+const FAMCOL2 = {baseline:"var(--fam-baseline)", surface:"var(--fam-surface)",
+  structural:"var(--fam-structural)", detector:"var(--fam-detector)",
+  architectural:"var(--fam-architectural)"};
+const pctO = x => x==null ? "—" : (100*x).toFixed(0)+"%";
+
+function renderOverview(){
+  const ds = state.stats || {};
+  const byId = {}; (ds.rows||[]).forEach(r => byId[r.strategy]=r);
+  const rows = state.strategies.map(s => ({...s, ...(byId[s.id]||{})}));
+  const base = byId["none"] || {};
+  const measured = rows.filter(r => r.asr != null);
+  const best = measured.filter(r => r.strategy!=="none").sort((a,b)=>(a.asr-b.asr))[0];
+  const zero = measured.filter(r => r.strategy!=="none" && r.asr===0).length;
+  const domains = [...new Set(state.samples.map(s=>s.family))];
+  const domCount = {};
+  state.samples.forEach(s=>{ const d=s.has_trace!==undefined?s.family:s.family; });
+
+  // KPI tiles
+  const kpi = (n,l,c)=>`<div class="k"><div class="n" style="color:${c||'var(--ink)'}">${n}</div><div class="l">${l}</div></div>`;
+  $("#ovKpi").innerHTML =
+    kpi(base.asr!=null?pctO(base.asr):"75%","undefended attack success","var(--mal)")
+    + kpi(best?`${pctO(best.asr)}`:"0%", best?`best defense (${esc(best.label)})`:"best defense","var(--clean)")
+    + kpi(measured.length?zero:"6","defenses that fully block","var(--clean)")
+    + kpi(state.samples.length, "labeled artifacts","var(--accent)")
+    + kpi("4","task domains","var(--accent)")
+    + kpi(state.strategies.length,"defenses evaluated","var(--accent)");
+
+  // chart (measured, else a small note)
+  $("#ovLegend").innerHTML = state.families.map(f=>`<span><i style="background:${FAMCOL2[f]}"></i>${f}</span>`).join("");
+  if (measured.length){
+    const mr = measured.slice().sort((a,b)=>b.asr-a.asr);
+    const W=640, lab=200, h=mr.length*24+8;
+    let svg=`<svg viewBox="0 0 ${W} ${h}" width="100%" style="font:12px var(--mono)">`;
+    mr.forEach((r,i)=>{const y=i*24+5,bw=(W-lab-60)*(r.asr||0),c=FAMCOL2[r.family]||"#888";
+      svg+=`<text x="0" y="${y+13}" fill="#cfd8e6">${esc(r.label||r.strategy)}</text>`;
+      svg+=`<rect x="${lab}" y="${y+2}" width="${W-lab-60}" height="13" fill="#141b26" rx="3"/>`;
+      svg+=`<rect x="${lab}" y="${y+2}" width="${Math.max(2,bw)}" height="13" fill="${c}" rx="3"/>`;
+      svg+=`<text x="${W-52}" y="${y+13}" fill="#cfd8e6">${pctO(r.asr)}</text>`;});
+    svg+="</svg>"; $("#ovChart").innerHTML=svg;
+    $("#ovMeta").textContent = `measured · ${ds.model||""}`;
+    $("#ovChartHint").textContent = ds.meta ? `${ds.meta.n_samples||""} samples · mode ${ds.meta.mode||""}` : "";
+  } else {
+    $("#ovChart").innerHTML = `<div class="reason">Pre-computed numbers are being captured. Run
+      <span class="mono">python3 bench.py --mode live --scope all --strategies all --out defense_stats</span>
+      to populate this, or open the <b>Benchmark</b> tab to run a matrix now.</div>`;
+    $("#ovMeta").innerHTML = `<span style="color:var(--esc)">stats pending</span>`;
+  }
+
+  // coverage
+  const fam = {};
+  state.samples.forEach(s=>{ fam[s.family]=fam[s.family]||{m:0,b:0};
+    s.label==="malicious"?fam[s.family].m++:fam[s.family].b++; });
+  $("#ovCoverage").innerHTML = Object.entries(fam).map(([f,c])=>
+    `<div class="row" style="justify-content:space-between;border-bottom:1px solid var(--line);padding:6px 0">
+       <span class="mono">${esc(f)}</span>
+       <span class="small"><b style="color:var(--mal)">${c.m}</b> malicious · <b style="color:var(--clean)">${c.b}</b> benign</span></div>`).join("");
 }
 
 function renderHealth(h){
@@ -73,22 +133,28 @@ function renderModeToggle(){
   });
 }
 
+function activateTab(v){
+  const btn = $(`#tabs button[data-v="${v}"]`); if(!btn) return;
+  $$("#tabs button").forEach(x => x.classList.remove("on")); btn.classList.add("on");
+  $$(".view").forEach(s => s.classList.remove("on"));
+  const view = $(`#v-${v}`); if(view) view.classList.add("on");
+}
 function renderTabs(){
   $$("#tabs button").forEach(b => b.onclick = () => {
-    $$("#tabs button").forEach(x => x.classList.remove("on")); b.classList.add("on");
-    $$(".view").forEach(v => v.classList.remove("on"));
-    $(`#v-${b.dataset.v}`).classList.add("on");
+    activateTab(b.dataset.v); history.replaceState(null,"","#"+b.dataset.v);
   });
+  const h = (location.hash||"").replace("#","");
+  if (h && $(`#tabs button[data-v="${h}"]`)) activateTab(h);
 }
 
-// ---------------------------------------------------------------- attack
+// ---------------------------------------------------------------- attack (4-phase)
 function renderAttackSamples(){
   const host = $("#attackSamples");
   host.innerHTML = state.samples.map(s =>
     `<div class="sitem" data-id="${s.id}">
        <span class="sdot ${s.label==='malicious'?'m':'b'}"></span>
        <div style="flex:1"><div>${esc(s.title||s.id)}</div>
-         <div class="small dim mono">${s.id} · ${s.chars}b${s.has_trace?' · trace':''}</div></div>
+         <div class="small dim mono">${esc(s.family||'')}${s.has_trace?' · trace':''}</div></div>
      </div>`).join("");
   $$(".sitem", host).forEach(el => el.onclick = () => selectAttackSample(el.dataset.id, host));
 }
@@ -98,53 +164,46 @@ async function selectAttackSample(id, host){
   const d = await api(`/api/sample/${id}`);
   state.attackSample = d;
   $("#asTitle").textContent = d.title || d.id;
-  $("#asSrc").textContent = d.source || "";
-  $("#rawCode").textContent = d.variants.raw;
-  $("#incCode").innerHTML = highlightTrace(d.variants.inception);
-  $("#rawVerdict").outerHTML = `<span id="rawVerdict" class="badge b-unk">—</span>`;
-  $("#incVerdict").outerHTML = `<span id="incVerdict" class="badge b-unk">—</span>`;
-  $("#rawReason").textContent = d.label==='malicious'
-    ? "The honest baseline. The target should flag this webshell as MALICIOUS."
-    : "A benign file — the target should return CLEAN.";
-  $("#incReason").textContent = d.trace
-    ? "The same code, with a borrowed reasoning trace planted in a trailing comment."
-    : "This sample carries no planted trace.";
-  $("#runAttack").disabled = false;
-  $("#runTransfer").disabled = !d.trace;
-  $("#xResult").innerHTML = "";
+  $("#asSrc").textContent = `${d.family||''} · ${d.source||''}`;
+  // reset phases
+  ["Raw","Seed","Root","Spawn"].forEach(p => setBadge("#v"+p, "—","b-unk"));
+  $("#cRaw").textContent = d.variants.raw || "";
+  $("#cRoot").innerHTML = highlightTrace(d.variants.inception || d.variants.raw);
+  $("#tSeed").textContent = d.trace || "(this sample has no planted trace)";
+  $("#rRaw").textContent = "The honest baseline — the target should flag the malicious artifact.";
+  $("#rRoot").textContent = "With the planted trace, the same model should flip its verdict.";
+  $("#rSpawn").textContent = "Cross-model transfer — the harvested trace is replayed unchanged.";
+  $("#runPipeline").disabled = false;
+}
+
+function setBadge(sel, text, cls){
+  const e = $(sel); if(!e) return;
+  e.className = "badge " + (cls||"b-unk"); e.textContent = text;
+}
+function verdictBadge(sel, v){
+  const m = {MALICIOUS:["b-mal","MALICIOUS"],CLEAN:["b-clean","CLEAN"],ESCALATE:["b-esc","ESCALATE"],UNKNOWN:["b-unk","—"]};
+  const [c,t] = m[v]||m.UNKNOWN; setBadge(sel,t,c);
 }
 
 function wireAttack(){
-  $("#runAttack").onclick = async () => {
-    const d = state.attackSample; if (!d) return;
-    const btn = $("#runAttack"); btn.disabled = true; btn.innerHTML = '<span class="spin"></span> running';
-    setV("#rawVerdict", "…"); setV("#incVerdict", "…");
-    $("#rawReason").textContent = "…"; $("#incReason").textContent = "…";
-    const [raw, inc] = await Promise.all([
-      post("/api/run", {sample:d.id, variant:"raw", strategy:"none", model:state.model, mode:state.mode}),
-      post("/api/run", {sample:d.id, variant: d.trace?"inception":"raw", strategy:"none", model:state.model, mode:state.mode})]);
-    $("#rawVerdict").outerHTML = `<span id="rawVerdict">${vbadge(raw.final_verdict)}</span>`;
-    $("#incVerdict").outerHTML = `<span id="incVerdict">${vbadge(inc.final_verdict)}</span>`;
-    $("#rawReason").textContent = raw.reasoning || raw.content || "(no reasoning returned)";
-    $("#incReason").textContent = inc.reasoning || inc.content || "(no reasoning returned)";
-    const flipped = raw.final_verdict==="MALICIOUS" && inc.final_verdict==="CLEAN";
-    btn.innerHTML = "▶ Run attack"; btn.disabled = false;
-    if (flipped) toast("Verdict flipped: MALICIOUS ➜ CLEAN — the webshell slipped through.");
-  };
-  $("#runTransfer").onclick = async () => {
-    const d = state.attackSample; if (!d || !d.trace) return;
-    const m = $("#xModel").value; const btn = $("#runTransfer");
-    btn.disabled = true; btn.innerHTML = '<span class="spin"></span>';
-    const r = await post("/api/run", {sample:d.id, variant:"inception", strategy:"none", model:m, mode:state.mode});
-    $("#xResult").innerHTML =
-      `<span class="pill mono">${m}</span> ${vbadge(r.final_verdict)}
-       <span class="small ${r.attack_success?'':'dim'}" style="color:${r.attack_success?'var(--mal)':'var(--mut)'}">
-       ${r.attack_success? 'trace transferred — classified CLEAN' : 'held — not fooled'}</span>
-       ${r.replay?'<span class="pill">replay</span>':''}`;
-    btn.innerHTML = "▶ Transfer"; btn.disabled = false;
+  $("#runPipeline").onclick = async () => {
+    const d = state.attackSample; if(!d) return;
+    const spawn = $("#xModel").value;
+    const btn = $("#runPipeline"); btn.disabled = true; btn.innerHTML = '<span class="spin"></span> running pipeline';
+    ["Raw","Seed","Root","Spawn"].forEach(p => setBadge("#v"+p,"…","b-unk"));
+    $("#spawnLabel").textContent = `P_tgt · D′ · ${spawn}`;
+    const r = await post("/api/pipeline", {sample:d.id, model:state.model, spawn_model:spawn, mode:state.mode});
+    verdictBadge("#vRaw", r.raw.verdict); $("#rRaw").textContent = r.raw.reasoning || r.raw.content || "(no reasoning)";
+    verdictBadge("#vSeed", r.seed.verdict); $("#tSeed").textContent = r.seed.trace || "(no trace harvested)";
+    verdictBadge("#vRoot", r.root.verdict); $("#rRoot").textContent = r.root.reasoning || r.root.content || "(no reasoning)";
+    $("#cRoot").innerHTML = highlightTrace(r.root.artifact || "");
+    verdictBadge("#vSpawn", r.spawn.verdict);
+    $("#rSpawn").textContent = `(${esc(spawn)}) ` + (r.spawn.reasoning || r.spawn.content || "(no reasoning)");
+    btn.innerHTML = "▶ Run pipeline"; btn.disabled = false;
+    if (r.raw.verdict==="MALICIOUS" && r.root.verdict==="CLEAN")
+      toast("RAW→ROOT: MALICIOUS ➜ CLEAN. "+(r.spawn.verdict==="CLEAN"?"And it transferred to "+spawn+".":""));
   };
 }
-function setV(sel, t){ const e=$(sel); if(e) e.textContent=t; }
 
 // ---------------------------------------------------------------- defense lab
 function renderDefSelect(){
