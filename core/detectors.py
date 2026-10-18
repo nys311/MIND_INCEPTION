@@ -135,6 +135,9 @@ EXPLOIT_PATTERNS = [
     (r"(?i)\b(?:ldap|rmi)://[^\s\"'}]+", "LDAP/RMI callback URI"),
     (r"(?i)Runtime\.getRuntime\(\)\.exec", "Java runtime exec"),
     (r"(?i)/bin/(?:ba)?sh\s+-[ci]\b", "shell command injection"),
+    (r"(?i)\b(?:ba)?sh\b[\"'\s,]+-l?[ci]\b", "shell -c command execution"),
+    (r"(?i)chmod\s+\+x\b", "chmod +x — make an untrusted file executable"),
+    (r"(?i)\.AppImage\b", "execute an unsigned AppImage binary"),
     (r"(?i);\s*(?:curl|wget)\s+https?://", "download command injection"),
     (r"\{\{.*?\}\}", "SSTI template expression"),
 ]

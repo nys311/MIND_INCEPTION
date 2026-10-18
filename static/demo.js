@@ -53,14 +53,19 @@ function renderCards() {
         <div style="font-weight:700;margin:8px 0 4px">${esc(u.title)}</div>
         <div class="small muted">${esc(u.scenario)}</div>
         <div class="small" style="margin-top:8px;color:var(--mal)">⚠ ${esc(u.impact)}</div>
+        ${u.image ? `<div class="small dim" style="margin-top:8px">🖼 includes a real captured figure</div>` : ""}
       </div>
     </div>`).join("");
   $$(".usecard").forEach(el => el.onclick = () => openCase(el.dataset.id));
+  const h = (location.hash || "").replace("#", "");
+  if (h && S.usecases.some(u => u.id === h)) openCase(h);
 }
 
 async function openCase(id) {
   const u = S.usecases.find(x => x.id === id);
+  if (!u) return;
   S.current = u;
+  history.replaceState(null, "", "#" + id);
   const def = S.strategies[u.defense] || { label: u.defense };
   $("#detail").innerHTML = `
     <div class="card">
@@ -76,6 +81,12 @@ async function openCase(id) {
         <div><div class="small muted"><b>Impact if it works</b></div>
           <div class="reason" style="border-left-color:var(--esc)">${esc(u.impact)}</div></div>
       </div>
+      ${u.image ? `<div style="margin-top:12px">
+        <div class="small muted"><b>Captured figure</b>${u.source ? ` — ${esc(u.source)}` : ""}
+          ${u.link ? ` · <a href="${u.link}" target="_blank" rel="noopener">source ↗</a>` : ""}</div>
+        <img src="${u.image}" alt="captured attack figure" loading="lazy"
+          style="margin-top:8px;max-width:100%;border:1px solid var(--line);border-radius:10px;display:block">
+      </div>` : ""}
     </div>
 
     <div class="flip" style="margin-top:14px">

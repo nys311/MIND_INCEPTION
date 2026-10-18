@@ -82,11 +82,19 @@ meaning and which direction is better. Three pages, linked in the header:
    exportable to JSON/CSV. **⤓ Download samples** exports the whole evaluation set
    (all artifact variants) as one JSON to run against your own pipeline.
 
-**Use Cases (`/demo`)** — five end-to-end operational scenarios (webshell upload
+**Use Cases (`/demo`)** — six end-to-end operational scenarios (webshell upload
 scanner, phishing filter, PowerShell/EDR triage, **SOAR auto-closing a Log4Shell
-alert**, agent following an injected exfil step). Open one, **Run scenario** to see
-the raw-vs-inception flip, then **Apply defense** to watch the recommended layer
-hold.
+alert**, agent following an injected exfil step, and **GPT-OSS-20B running an
+untrusted AppImage**). Open one, **Run scenario** to see the raw-vs-inception flip,
+then **Apply defense** to watch the recommended layer hold.
+
+The GPT-OSS-20B case reproduces our Kaggle red-teaming writeup — the model reasons
+an unsigned `dating.AppImage` in a "Cute-CATs" repo is benign and executes it via
+its `repo_browser.run` tool (the simplest prompt for inappropriate tool use):
+
+![GPT-OSS-20B inappropriate tool use](static/kaggle/gptoss_tooluse.png)
+
+> Figure from our [Kaggle writeup](https://www.kaggle.com/competitions/openai-gpt-oss-20b-red-teaming/writeups/the-simplest-prompt-for-inappropriate-tool-use).
 
 **Defenses (`/defense`)** — every defense method grouped by family, with
 pre-computed ASR / Δ / per-placement / FP / Utility / score, a comparison chart,
