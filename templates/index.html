@@ -142,8 +142,18 @@
   <!-- DEFENSE LAB -------------------------------------------------------- -->
   <section class="view" id="v-defense">
     <div class="card">
+      <div class="row"><h3>Defense methods</h3>
+        <span class="muted small">click a method to see how it works + its measured effect</span>
+        <span class="spacer"></span><a href="/defense" class="apibtn">full matrix ↗</a></div>
+      <div class="grid" style="grid-template-columns:270px 1fr;gap:14px;margin-top:10px">
+        <div id="labNames"></div>
+        <div id="labDetail"></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:14px">
       <div class="row">
-        <div><h3>Defense battery</h3>
+        <div><h3>Run the battery on a sample</h3>
           <div class="small dim">Runs every defense on the inception artifact, plus a benign false-positive check.</div></div>
         <div class="spacer"></div>
         <span class="muted small">Sample</span><select id="defSample"></select>
@@ -217,6 +227,7 @@
 </main>
 
 <script src="/static/apikit.js"></script>
+<script src="/static/defense_methods.js"></script>
 <script src="/static/app.js"></script>
 </body>
 </html>

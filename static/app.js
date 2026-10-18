@@ -65,6 +65,7 @@ async function boot(){
   renderOverview();
   renderAttackSamples();
   renderDefSelect();
+  renderLabMethods();
   $("#scount").textContent = `(${state.samples.length})`;
   $("#aboutHealth").textContent =
     `api_key=${h.api_key_present} · cached_runs=${h.cached_runs} · samples=${h.samples} · strategies=${h.strategies}`;
@@ -290,6 +291,12 @@ function wireAttack(){
 }
 
 // ---------------------------------------------------------------- defense lab
+function renderLabMethods(){
+  if (!window.DefMethods) return;
+  const byId = {}; ((state.stats && state.stats.rows) || []).forEach(r => byId[r.strategy] = r);
+  DefMethods.renderMaster($("#labNames"), $("#labDetail"), state.strategies, state.families, byId);
+}
+
 function renderDefSelect(){
   const mal = state.samples.filter(s => s.has_trace);
   $("#defSample").innerHTML = mal.map(s => `<option value="${s.id}">${esc(s.title||s.id)}</option>`).join("");
