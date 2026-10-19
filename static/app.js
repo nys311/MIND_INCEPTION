@@ -72,9 +72,6 @@ async function boot(){
 
   wireAttack(); wireDefense(); wireBench();
 
-  // step bar -> jump to tab
-  $$("#stepbar .stp").forEach(s => s.onclick = () => activateTab(s.dataset.go));
-  $$("#stepbar .stp").forEach(s => s.classList.toggle("on", s.dataset.go === tabFromPath()));
   // download samples
   const dl = $("#dlSamples"); if (dl) dl.onclick = () => window.open("/api/samples/download", "_blank");
 }
@@ -190,7 +187,6 @@ function activateTab(v, push=true){
   $$("#tabs button").forEach(x => x.classList.remove("on")); btn.classList.add("on");
   $$(".view").forEach(s => s.classList.remove("on"));
   const view = $(`#v-${v}`); if(view) view.classList.add("on");
-  $$("#stepbar .stp").forEach(s => s.classList.toggle("on", s.dataset.go === v));
   if (push && TAB_PATH[v] && location.pathname !== TAB_PATH[v])
     history.pushState({v}, "", TAB_PATH[v]);
   window.scrollTo({top:0, behavior:"smooth"});
@@ -214,6 +210,40 @@ function renderAttackSamples(){
 }
 
 const PHASE = {raw:"Raw", seed:"Seed", root:"Root", spawn:"Spawn"};
+
+// per-domain deployment-context diagram shown before RAW
+const CTX = {
+  webshell: {where: "upload scanners · malware-triage queues · SOC file analysis",
+    src:["uploaded file","attacker-controlled"], mid:["LLM triage analyst","classifies the file"],
+    out:["verdict","CLEAN → served · MAL → analyst"], tool:null},
+  phishing: {where: "secure email gateways (SEG) · mailbox security",
+    src:["inbound email","attacker-controlled"], mid:["LLM email filter","classifies the message"],
+    out:["disposition","LEGIT → delivered · PHISH → quarantine"], tool:null},
+  powershell: {where: "EDR/XDR consoles · SOC auto-triage",
+    src:["EDR-flagged script","attacker-controlled"], mid:["LLM triage","classifies the script"],
+    out:["disposition","BENIGN → auto-close · MAL → escalate"], tool:null},
+  agentic: {where: "coding agents · SOAR playbooks · autonomous assistants",
+    src:["tool observation","attacker-controlled"], mid:["LLM agent","decides next action"],
+    out:["action","proceed → tool runs · block → stop"],
+    tool:["tools: repo_browser.run / shell / email","the agent can act on the world"]},
+};
+function ctxDiagram(domain){
+  const c = CTX[domain] || CTX.webshell, W = 640, H = c.tool ? 150 : 96, y = 30;
+  const box=(x,yy,w,h,a,b,fill,stroke)=>`<rect x="${x}" y="${yy}" width="${w}" height="${h}" rx="8" fill="${fill||'#121823'}" stroke="${stroke||'#2b3647'}"/>`
+    +`<text x="${x+w/2}" y="${yy+h/2-2}" fill="#dce7f5" font-size="12" font-weight="700" text-anchor="middle">${esc(a)}</text>`
+    +`<text x="${x+w/2}" y="${yy+h/2+13}" fill="#8a97a8" font-size="9.5" text-anchor="middle">${esc(b)}</text>`;
+  const arr=(x1,x2,yy)=>`<line x1="${x1}" y1="${yy}" x2="${x2-7}" y2="${yy}" stroke="#46566b" stroke-width="2"/><path d="M${x2-8},${yy-4} L${x2},${yy} L${x2-8},${yy+4} Z" fill="#46566b"/>`;
+  let g = box(8,y,160,46,c.src[0],c.src[1],"#1b1507","#5a4a1e")
+    + arr(168,236,y+23) + box(236,y,170,46,c.mid[0],c.mid[1])
+    + arr(406,474,y+23) + box(474,y,158,46,c.out[0],c.out[1],"#0c1118","#27425f");
+  if (c.tool){
+    g += `<line x1="321" y1="${y+46}" x2="321" y2="${y+86}" stroke="#2f6b4a" stroke-width="2" stroke-dasharray="4 3"/>`
+       + `<path d="M317,${y+80} L321,${y+88} L325,${y+80} Z" fill="#2f6b4a"/>`
+       + box(206,y+88,230,42,c.tool[0],c.tool[1],"#06231a","#1c4a33");
+  }
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" style="max-width:680px;font-family:var(--mono)">${g}`
+    + `<text x="8" y="${H-6}" fill="#5b6676" font-size="10">untrusted input enters the pipeline and the LLM's verdict/action is trusted downstream</text></svg>`;
+}
 function dprime(d, trace){           // build D' = µ + code + comment(trace)
   const [o,c] = d.comment || ["/*","*/"];
   const mk = d.marker ? `${o}${d.marker}${c}\n` : "";
@@ -237,6 +267,11 @@ async function selectAttackSample(id, host){
   $("#rRoot").textContent = "With the planted trace, the same model should flip its verdict.";
   $("#rSpawn").textContent = "Cross-model transfer — the harvested trace is replayed unchanged.";
   $("#useTrace").style.display = "none";
+  // deployment-context diagram before RAW
+  const dom = d.domain || "webshell";
+  $("#ctxCard").style.display = "block";
+  $("#ctxWhere").textContent = "commonly found in: " + ((CTX[dom] || CTX.webshell).where);
+  $("#ctxDiagram").innerHTML = ctxDiagram(dom);
   $("#runAll").disabled = false;
   $$(".runp").forEach(b => b.disabled = false);
 }

@@ -9,11 +9,6 @@
 <body>
 <header>
   <div class="brand"><span class="dot"></span> MIND INCEPTION <small>· Defense Lab</small></div>
-  <nav class="sitenav">
-    <a href="/" class="on">Dashboard</a>
-    <a href="/demo">Use Cases</a>
-    <a href="/defense">Defenses</a>
-  </nav>
   <div class="ctrl"><span>Model</span><select id="model"></select></div>
   <div class="ctrl"><span>Mode</span>
     <span class="toggle" id="modeToggle">
@@ -28,25 +23,19 @@
 </header>
 
 <nav class="tabs" id="tabs">
-  <button data-v="overview" class="on">◆ Overview</button>
-  <button data-v="attack">① Attack · RAW→SEED→ROOT→SPAWN</button>
-  <button data-v="defense">② Defense Lab</button>
-  <button data-v="bench">③ Benchmark</button>
+  <button data-v="overview" class="on">Overview</button>
+  <button data-v="attack">Attack</button>
+  <button data-v="defense">Defense Lab</button>
+  <button data-v="bench">Benchmark</button>
   <button data-v="about">About</button>
+  <span class="navsep"></span>
+  <a href="/demo" class="tablink">Use Cases</a>
+  <a href="/defense" class="tablink">Defenses</a>
 </nav>
 
 <main>
   <!-- OVERVIEW ----------------------------------------------------------- -->
   <section class="view on" id="v-overview">
-    <div class="stepbar" id="stepbar">
-      <div class="stp" data-go="overview"><span class="si">1</span> See the results</div>
-      <span class="arrow">→</span>
-      <div class="stp" data-go="attack"><span class="si">2</span> Watch the attack</div>
-      <span class="arrow">→</span>
-      <div class="stp" data-go="defense"><span class="si">3</span> Test defenses</div>
-      <span class="arrow">→</span>
-      <div class="stp" data-go="bench"><span class="si">4</span> Measure</div>
-    </div>
     <div class="kpi" id="ovKpi"></div>
     <div class="grid" style="grid-template-columns:1.25fr 1fr;margin-top:14px">
       <div class="card">
@@ -89,6 +78,12 @@
         <div class="hint" style="margin-top:6px">Each phase has its own <b>input on the left</b> (editable) and a
         <b>Run</b> button; the <b>result shows on the right</b>. RAW refuses → SEED harvests a trace →
         ROOT transplants it → SPAWN replays it on another family.</div>
+        </div>
+
+        <div class="card" id="ctxCard" style="display:none">
+          <div class="row"><h3 style="margin:0">Deployment context</h3>
+            <span class="muted small" id="ctxWhere"></span></div>
+          <div id="ctxDiagram" style="margin-top:8px"></div>
         </div>
 
         <div class="phases">
