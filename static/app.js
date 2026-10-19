@@ -249,6 +249,16 @@ function verdictBadge(sel, v){
   const m = {MALICIOUS:["b-mal","MALICIOUS"],CLEAN:["b-clean","CLEAN"],ESCALATE:["b-esc","ESCALATE"],UNKNOWN:["b-unk","—"]};
   const [c,t] = m[v]||m.UNKNOWN; setBadge(sel,t,c);
 }
+// render a phase/run output: reasoning (thinking) + the model's FINAL answer
+function phaseHTML(r, prefix){
+  const reasoning = r.reasoning || "", content = r.content || "";
+  let h = prefix ? `<div class="small dim mono" style="margin-bottom:4px">${esc(prefix)}</div>` : "";
+  if (reasoning) h += `<div class="olabel">reasoning (thinking)</div><div class="otext">${esc(reasoning)}</div>`;
+  if (content)   h += `<div class="olabel" style="margin-top:8px">final answer</div><pre class="ans">${esc(content)}</pre>`;
+  if (r.error)   h += `<div style="color:var(--mal);margin-top:6px">error: ${esc(r.error)}</div>`;
+  if (!reasoning && !content && !r.error) h += `<span class="dim">(no output)</span>`;
+  return h;
+}
 
 async function runPhase(role){
   const d = state.attackSample; if(!d) return null;
@@ -261,8 +271,7 @@ async function runPhase(role){
   const artifact = $("#in"+P).value;
   const r = await post("/api/phase", {role, sample:d.id, artifact, model, mode:state.mode});
   verdictBadge("#v"+P, r.verdict);
-  const out = r.reasoning || r.content || (r.error ? "error: "+r.error : "(no reasoning returned)");
-  $("#r"+P).textContent = (role==="spawn" ? `(${model}) ` : "") + out;
+  $("#r"+P).innerHTML = phaseHTML(r, role==="spawn" ? `model: ${model}` : "");
   if (btn){ btn.innerHTML = btn.dataset.lbl || "▶ Run"; btn.disabled = false; }
   if (role === "seed"){
     state.harvested = (r.verdict === "CLEAN" && r.reasoning) ? r.reasoning : (d.trace || "");

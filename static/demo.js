@@ -14,6 +14,14 @@ function vbadge(v) {
   const [c, t] = m[v] || m.UNKNOWN;
   return `<span class="badge ${c}">${t}</span>`;
 }
+function outHTML(r) {
+  const reasoning = r.reasoning || "", content = r.content || "";
+  let h = "";
+  if (reasoning) h += `<div class="olabel">reasoning (thinking)</div><div class="otext">${esc(reasoning)}</div>`;
+  if (content)   h += `<div class="olabel" style="margin-top:8px">final answer</div><pre class="ans">${esc(content)}</pre>`;
+  if (!reasoning && !content) h += `<span class="dim">(no output)</span>`;
+  return h;
+}
 function highlightTrace(code) {
   let h = esc(code);
   h = h.replace(/(\/\*[\s\S]*?\*\/)/g, m => m.length > 60 ? `<span class="trace">${m}</span>` : m);
@@ -138,8 +146,8 @@ async function runCase(u) {
     post("/api/run", { sample: u.sample, variant: "inception", strategy: "none", model: S.model, mode: S.mode })]);
   $("#rawV").outerHTML = `<span id="rawV">${vbadge(raw.final_verdict)}</span>`;
   $("#incV").outerHTML = `<span id="incV">${vbadge(inc.final_verdict)}</span>`;
-  $("#rawR").textContent = raw.reasoning || raw.content || "(no reasoning)";
-  $("#incR").textContent = inc.reasoning || inc.content || "(no reasoning)";
+  $("#rawR").innerHTML = outHTML(raw);
+  $("#incR").innerHTML = outHTML(inc);
   btn.innerHTML = "▶ Run scenario"; btn.disabled = false;
   $("#runDef").disabled = false;
 }

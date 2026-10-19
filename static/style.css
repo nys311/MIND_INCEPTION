@@ -222,3 +222,9 @@ button.mini{font-size:11px;padding:3px 9px;border-radius:7px}
 .mname:hover{background:#0f141c}
 .mname.on{background:#15202f;border-color:#27425f}
 .sdot2{width:8px;height:8px;border-radius:50%;flex:none}
+
+/* ---- phase/run output: reasoning + final answer ---- */
+.olabel{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--mut);font-weight:700}
+.otext{white-space:pre-wrap;color:#c6d2e2;font-size:12.5px;margin-top:3px}
+pre.ans{margin:3px 0 0;background:#0b140e;border:1px solid #1c4a33;border-left:3px solid var(--clean);
+  border-radius:8px;padding:9px;font-family:var(--mono);font-size:12px;color:#d6f0e2;white-space:pre-wrap;overflow:auto}
