@@ -7,6 +7,8 @@ flips a security verdict from **MALICIOUS** to **CLEAN**.
 
 ![MIND INCEPTION demo](assets/demo.gif)
 
+![How MIND INCEPTION works](assets/method_overview.png)
+
 > 30-second walkthrough (also `assets/demo.mp4`): a webshell flips to CLEAN under a
 > planted trace, a Log4Shell alert gets auto-closed by a SOAR assistant, and a
 > non-LLM cross-check overrides the fooled model. Regenerate with

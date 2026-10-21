@@ -225,3 +225,7 @@ details summary{cursor:pointer;color:var(--mut);font-size:12px;padding:4px 0}
 .spin{display:inline-block;width:12px;height:12px;border:2px solid var(--line2);border-top-color:var(--accent);border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px}
 @keyframes sp{to{transform:rotate(360deg)}}
 @media(max-width:900px){.flip{grid-template-columns:1fr}.flip .mid{transform:rotate(90deg)}}
+
+/* ---- cyberpunk method poster ---- */
+.method-poster{border-radius:16px;overflow:hidden;box-shadow:0 20px 50px -24px rgba(0,0,0,.6),0 0 0 1px var(--line)}
+.method-poster svg{display:block}
