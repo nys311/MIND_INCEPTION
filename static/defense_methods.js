@@ -9,13 +9,13 @@
   const pct = x => (x == null ? "—" : (100 * x).toFixed(0) + "%");
 
   function dbox(x, y, w, h, label, fill, stroke, sub) {
-    return `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="7" fill="${fill || "#121823"}" stroke="${stroke || "#2b3647"}"/>`
-      + `<text x="${x + w / 2}" y="${y + (sub ? h / 2 - 3 : h / 2 + 4)}" fill="#dce7f5" font-size="11.5" font-weight="600" text-anchor="middle">${label}</text>`
-      + (sub ? `<text x="${x + w / 2}" y="${y + h / 2 + 12}" fill="#8a97a8" font-size="9.5" text-anchor="middle">${sub}</text>` : "");
+    return `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="7" fill="${fill || "var(--svg-box)"}" stroke="${stroke || "var(--svg-bd)"}"/>`
+      + `<text x="${x + w / 2}" y="${y + (sub ? h / 2 - 3 : h / 2 + 4)}" fill="var(--svg-ink)" font-size="11.5" font-weight="600" text-anchor="middle">${label}</text>`
+      + (sub ? `<text x="${x + w / 2}" y="${y + h / 2 + 12}" fill="var(--svg-mut)" font-size="9.5" text-anchor="middle">${sub}</text>` : "");
   }
   function darr(x1, x2, y) {
-    return `<line x1="${x1}" y1="${y}" x2="${x2 - 7}" y2="${y}" stroke="#46566b" stroke-width="2"/>`
-      + `<path d="M${x2 - 8},${y - 4} L${x2},${y} L${x2 - 8},${y + 4} Z" fill="#46566b"/>`;
+    return `<line x1="${x1}" y1="${y}" x2="${x2 - 7}" y2="${y}" stroke="var(--svg-arrow)" stroke-width="2"/>`
+      + `<path d="M${x2 - 8},${y - 4} L${x2},${y} L${x2 - 8},${y + 4} Z" fill="var(--svg-arrow)"/>`;
   }
   const MECH = {
     none: { stages: [], caption: "planted trace flows straight into the model → it adopts it" },
@@ -35,25 +35,25 @@
   };
   function wrapSvg(g, caption, W, H) {
     return `<svg viewBox="0 0 ${W} ${H}" width="100%" style="max-width:660px;font-family:var(--mono)">${g}`
-      + `<text x="8" y="${H - 8}" fill="#8a97a8" font-size="10.5">${esc(caption)}</text></svg>`;
+      + `<text x="8" y="${H - 8}" fill="var(--svg-mut)" font-size="10.5">${esc(caption)}</text></svg>`;
   }
   function methodDiagram(id) {
     const m = MECH[id] || MECH.none, W = 640, H = 120, y = 44;
-    const col = f => FAMCOL[f] || "#2b3647";
-    const fillFor = f => ({ surface: "#1a1226", structural: "#101f36", detector: "#241a06", architectural: "#06231a" }[f] || "#121823");
-    let g = dbox(8, y, 120, 34, "Artifact + trace", "#1b1507", "#5a4a1e"), x = 128;
+    const col = f => FAMCOL[f] || "var(--svg-bd)";
+    const fillFor = f => "var(--svg-box)";  // neutral fill; family color is the stroke
+    let g = dbox(8, y, 120, 34, "Artifact + trace", "var(--amber-bg)", "var(--amber-bd)"), x = 128;
     if (m.gate && !m.stages && !m.post) {
       g += darr(x, x + 60, y + 17) + dbox(x + 60, y - 2, 140, 42, m.gate[0], fillFor(m.gate[1]), col(m.gate[1]));
       const gx = x + 200;
-      g += `<path d="M${gx},${y + 17} L${gx + 55},${y - 14}" stroke="#46566b" stroke-width="2"/><path d="M${gx},${y + 17} L${gx + 55},${y + 48}" stroke="#46566b" stroke-width="2"/>`;
-      g += dbox(gx + 58, y - 30, 120, 28, "flag → BLOCK", "#2a0f14", "#512");
-      g += dbox(gx + 58, y + 34, 120, 28, "clear → LRM", "#06231a", "#164");
+      g += `<path d="M${gx},${y + 17} L${gx + 55},${y - 14}" stroke="var(--svg-arrow)" stroke-width="2"/><path d="M${gx},${y + 17} L${gx + 55},${y + 48}" stroke="var(--svg-arrow)" stroke-width="2"/>`;
+      g += dbox(gx + 58, y - 30, 120, 28, "flag → BLOCK", "var(--mal-bg)", "var(--mal-bd)");
+      g += dbox(gx + 58, y + 34, 120, 28, "clear → LRM", "var(--clean-bg)", "var(--clean-bd)");
       return wrapSvg(g, m.caption, W, H);
     }
     if (m.vote) {
-      g += `<path d="M${x},${y + 17} L${x + 50},${y - 10}" stroke="#46566b" stroke-width="2"/><path d="M${x},${y + 17} L${x + 50},${y + 17}" stroke="#46566b" stroke-width="2"/><path d="M${x},${y + 17} L${x + 50},${y + 44}" stroke="#46566b" stroke-width="2"/>`;
+      g += `<path d="M${x},${y + 17} L${x + 50},${y - 10}" stroke="var(--svg-arrow)" stroke-width="2"/><path d="M${x},${y + 17} L${x + 50},${y + 17}" stroke="var(--svg-arrow)" stroke-width="2"/><path d="M${x},${y + 17} L${x + 50},${y + 44}" stroke="var(--svg-arrow)" stroke-width="2"/>`;
       g += dbox(x + 52, y - 24, 110, 26, "LRM A") + dbox(x + 52, y + 4, 110, 26, "LRM B") + dbox(x + 52, y + 32, 110, 26, "LRM C");
-      g += darr(x + 162, x + 230, y + 17) + dbox(x + 232, y, 140, 34, "majority / escalate", "#06231a", "#1c4a33");
+      g += darr(x + 162, x + 230, y + 17) + dbox(x + 232, y, 140, 34, "majority / escalate", "var(--clean-bg)", "var(--clean-bd)");
       g += darr(x + 372, x + 440, y + 17) + dbox(x + 440, y, 100, 34, "Verdict");
       return wrapSvg(g, m.caption, W, H);
     }
@@ -61,7 +61,7 @@
     g += darr(x, x + 56, y + 17); x += 56; g += dbox(x, y, 96, 34, "LRM"); x += 96;
     if (m.post) { g += darr(x, x + 56, y + 17); x += 56; g += dbox(x, y - 2, 150, 42, m.post[0], fillFor(m.post[1]), col(m.post[1])); x += 150; }
     g += darr(x, Math.min(x + 54, W - 96), y + 17);
-    g += dbox(Math.min(x + 54, W - 94), y, 90, 34, m.post ? "override" : "Verdict", m.post ? "#2a0f14" : "#121823", m.post ? "#512" : "#2b3647");
+    g += dbox(Math.min(x + 54, W - 94), y, 90, 34, m.post ? "override" : "Verdict", m.post ? "var(--mal-bg)" : "var(--svg-box)", m.post ? "var(--mal-bd)" : "var(--svg-bd)");
     return wrapSvg(g, m.caption, W, Math.max(H, y + 44));
   }
 
@@ -94,7 +94,7 @@
           <span class="famtag" style="color:${FAMCOL[s.family]}">${s.family}</span></div>
         <div class="muted small" style="margin:6px 0 4px">${esc(s.desc || "")}</div>
         <div class="hint" style="margin-bottom:8px">expected: ${esc(s.expect || "")}</div>
-        <div class="card" style="margin:0;background:#0c1118">${methodDiagram(id)}</div>
+        <div class="card" style="margin:0;background:var(--panel3)">${methodDiagram(id)}</div>
         <div class="small" style="margin-top:10px">${stat}</div>`;
     }
     $$(".mname", namesEl).forEach(el => el.onclick = () => show(el.dataset.id));

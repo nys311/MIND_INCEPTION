@@ -48,10 +48,10 @@ function renderChart() {
   rows.forEach((r, i) => {
     const y = i * 26 + 6, bw = (W - lab - 70) * (r.asr || 0);
     const col = FAMCOL[r.family] || "#888";
-    svg += `<text x="0" y="${y + 13}" fill="#cfd8e6">${esc(r.label || r.strategy)}</text>`;
-    svg += `<rect x="${lab}" y="${y + 2}" width="${W - lab - 70}" height="14" fill="#1a2230" rx="3"/>`;
+    svg += `<text x="0" y="${y + 13}" fill="var(--svg-ink)">${esc(r.label || r.strategy)}</text>`;
+    svg += `<rect x="${lab}" y="${y + 2}" width="${W - lab - 70}" height="14" fill="var(--track)" rx="3"/>`;
     svg += `<rect x="${lab}" y="${y + 2}" width="${Math.max(2, bw)}" height="14" fill="${col}" rx="3"/>`;
-    svg += `<text x="${W - 62}" y="${y + 13}" fill="#cfd8e6">${pct(r.asr)}</text>`;
+    svg += `<text x="${W - 62}" y="${y + 13}" fill="var(--svg-ink)">${pct(r.asr)}</text>`;
   });
   svg += "</svg>";
   $("#chart").innerHTML = svg;

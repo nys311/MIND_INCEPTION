@@ -111,10 +111,10 @@ function renderOverview(){
     const W=640, lab=200, h=mr.length*24+8;
     let svg=`<svg viewBox="0 0 ${W} ${h}" width="100%" style="font:12px var(--mono)">`;
     mr.forEach((r,i)=>{const y=i*24+5,bw=(W-lab-60)*(r.asr||0),c=FAMCOL2[r.family]||"#888";
-      svg+=`<text x="0" y="${y+13}" fill="#cfd8e6">${esc(r.label||r.strategy)}</text>`;
-      svg+=`<rect x="${lab}" y="${y+2}" width="${W-lab-60}" height="13" fill="#141b26" rx="3"/>`;
+      svg+=`<text x="0" y="${y+13}" fill="var(--svg-ink)">${esc(r.label||r.strategy)}</text>`;
+      svg+=`<rect x="${lab}" y="${y+2}" width="${W-lab-60}" height="13" fill="var(--track)" rx="3"/>`;
       svg+=`<rect x="${lab}" y="${y+2}" width="${Math.max(2,bw)}" height="13" fill="${c}" rx="3"/>`;
-      svg+=`<text x="${W-52}" y="${y+13}" fill="#cfd8e6">${pctO(r.asr)}</text>`;});
+      svg+=`<text x="${W-52}" y="${y+13}" fill="var(--svg-ink)">${pctO(r.asr)}</text>`;});
     svg+="</svg>"; $("#ovChart").innerHTML=svg;
     $("#ovMeta").textContent = `measured · ${ds.model||""}`;
     $("#ovChartHint").textContent = ds.meta ? `${ds.meta.n_samples||""} samples · mode ${ds.meta.mode||""}` : "";
@@ -151,10 +151,10 @@ function renderTransfer(){
     const y=i*26+5, asr=r.asr||0, bw=(W-lab-70)*asr;
     const src = m.includes(t.source_model) || t.source_model.includes(m.split("/").pop());
     const col = src ? "var(--fam-baseline)" : "var(--mal)";
-    svg+=`<text x="0" y="${y+13}" fill="#cfd8e6">${esc(m)}${src?" (source)":""}</text>`;
-    svg+=`<rect x="${lab}" y="${y+2}" width="${W-lab-70}" height="14" fill="#1a2230" rx="3"/>`;
+    svg+=`<text x="0" y="${y+13}" fill="var(--svg-ink)">${esc(m)}${src?" (source)":""}</text>`;
+    svg+=`<rect x="${lab}" y="${y+2}" width="${W-lab-70}" height="14" fill="var(--track)" rx="3"/>`;
     svg+=`<rect x="${lab}" y="${y+2}" width="${Math.max(2,bw)}" height="14" fill="${col}" rx="3"/>`;
-    svg+=`<text x="${W-62}" y="${y+13}" fill="#cfd8e6">${pctO(r.asr)}</text>`;
+    svg+=`<text x="${W-62}" y="${y+13}" fill="var(--svg-ink)">${pctO(r.asr)}</text>`;
   });
   svg+="</svg>";
   $("#ovTransferBars").innerHTML = svg
@@ -229,20 +229,20 @@ const CTX = {
 };
 function ctxDiagram(domain){
   const c = CTX[domain] || CTX.webshell, W = 640, H = c.tool ? 150 : 96, y = 30;
-  const box=(x,yy,w,h,a,b,fill,stroke)=>`<rect x="${x}" y="${yy}" width="${w}" height="${h}" rx="8" fill="${fill||'#121823'}" stroke="${stroke||'#2b3647'}"/>`
-    +`<text x="${x+w/2}" y="${yy+h/2-2}" fill="#dce7f5" font-size="12" font-weight="700" text-anchor="middle">${esc(a)}</text>`
-    +`<text x="${x+w/2}" y="${yy+h/2+13}" fill="#8a97a8" font-size="9.5" text-anchor="middle">${esc(b)}</text>`;
-  const arr=(x1,x2,yy)=>`<line x1="${x1}" y1="${yy}" x2="${x2-7}" y2="${yy}" stroke="#46566b" stroke-width="2"/><path d="M${x2-8},${yy-4} L${x2},${yy} L${x2-8},${yy+4} Z" fill="#46566b"/>`;
-  let g = box(8,y,160,46,c.src[0],c.src[1],"#1b1507","#5a4a1e")
+  const box=(x,yy,w,h,a,b,fill,stroke)=>`<rect x="${x}" y="${yy}" width="${w}" height="${h}" rx="8" fill="${fill||'var(--svg-box)'}" stroke="${stroke||'var(--svg-bd)'}"/>`
+    +`<text x="${x+w/2}" y="${yy+h/2-2}" fill="var(--svg-ink)" font-size="12" font-weight="700" text-anchor="middle">${esc(a)}</text>`
+    +`<text x="${x+w/2}" y="${yy+h/2+13}" fill="var(--svg-mut)" font-size="9.5" text-anchor="middle">${esc(b)}</text>`;
+  const arr=(x1,x2,yy)=>`<line x1="${x1}" y1="${yy}" x2="${x2-7}" y2="${yy}" stroke="var(--svg-arrow)" stroke-width="2"/><path d="M${x2-8},${yy-4} L${x2},${yy} L${x2-8},${yy+4} Z" fill="var(--svg-arrow)"/>`;
+  let g = box(8,y,160,46,c.src[0],c.src[1],"var(--amber-bg)","var(--amber-bd)")
     + arr(168,236,y+23) + box(236,y,170,46,c.mid[0],c.mid[1])
-    + arr(406,474,y+23) + box(474,y,158,46,c.out[0],c.out[1],"#0c1118","#27425f");
+    + arr(406,474,y+23) + box(474,y,158,46,c.out[0],c.out[1],"var(--panel3)","var(--accent-bd)");
   if (c.tool){
-    g += `<line x1="321" y1="${y+46}" x2="321" y2="${y+86}" stroke="#2f6b4a" stroke-width="2" stroke-dasharray="4 3"/>`
-       + `<path d="M317,${y+80} L321,${y+88} L325,${y+80} Z" fill="#2f6b4a"/>`
-       + box(206,y+88,230,42,c.tool[0],c.tool[1],"#06231a","#1c4a33");
+    g += `<line x1="321" y1="${y+46}" x2="321" y2="${y+86}" stroke="var(--clean)" stroke-width="2" stroke-dasharray="4 3"/>`
+       + `<path d="M317,${y+80} L321,${y+88} L325,${y+80} Z" fill="var(--clean)"/>`
+       + box(206,y+88,230,42,c.tool[0],c.tool[1],"var(--clean-bg)","var(--clean-bd)");
   }
   return `<svg viewBox="0 0 ${W} ${H}" width="100%" style="max-width:680px;font-family:var(--mono)">${g}`
-    + `<text x="8" y="${H-6}" fill="#5b6676" font-size="10">untrusted input enters the pipeline and the LLM's verdict/action is trusted downstream</text></svg>`;
+    + `<text x="8" y="${H-6}" fill="var(--svg-mut)" font-size="10">untrusted input enters the pipeline and the LLM's verdict/action is trusted downstream</text></svg>`;
 }
 function dprime(d, trace){           // build D' = µ + code + comment(trace)
   const [o,c] = d.comment || ["/*","*/"];
@@ -469,10 +469,10 @@ function renderBench(res){
   rows.forEach((r,i)=>{
     const y=i*rh+6, w=(lab), bw=(W-lab-70)*((r.asr==null?0:r.asr)/max);
     const col=FAMCOL[r.family]||"var(--mut)";
-    svg += `<text x="0" y="${y+13}" fill="#cfd8e6">${esc(r.label||r.strategy)}</text>`;
-    svg += `<rect x="${lab}" y="${y+2}" width="${W-lab-70}" height="14" fill="#1a2230" rx="3"/>`;
+    svg += `<text x="0" y="${y+13}" fill="var(--svg-ink)">${esc(r.label||r.strategy)}</text>`;
+    svg += `<rect x="${lab}" y="${y+2}" width="${W-lab-70}" height="14" fill="var(--track)" rx="3"/>`;
     svg += `<rect x="${lab}" y="${y+2}" width="${Math.max(2,bw)}" height="14" fill="${col}" rx="3"/>`;
-    svg += `<text x="${W-62}" y="${y+13}" fill="#cfd8e6">${pct(r.asr)}</text>`;
+    svg += `<text x="${W-62}" y="${y+13}" fill="var(--svg-ink)">${pct(r.asr)}</text>`;
   });
   svg += `</svg>`;
   $("#benchChart").innerHTML = svg;

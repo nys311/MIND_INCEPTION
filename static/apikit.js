@@ -27,14 +27,36 @@
     },
   };
 
+  // ---- theme ----
+  const THEME = "milab_theme";
+  function curTheme() {
+    try { return localStorage.getItem(THEME) || (matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark"); }
+    catch { return "dark"; }
+  }
+  function applyTheme(t) { document.documentElement.setAttribute("data-theme", t); }
+  function toggleTheme() {
+    const t = (document.documentElement.getAttribute("data-theme") === "light") ? "dark" : "light";
+    try { localStorage.setItem(THEME, t); } catch {}
+    applyTheme(t); paintThemeBtn();
+  }
+  function paintThemeBtn() {
+    const b = document.getElementById("mlTheme");
+    if (b) b.textContent = (document.documentElement.getAttribute("data-theme") === "light") ? "🌙" : "☀️";
+  }
+  applyTheme(curTheme());   // safety (head script usually sets it first)
+  window.MILAB.toggleTheme = toggleTheme;
+
   function render() {
     const slot = document.getElementById("apiSlot");
     if (!slot) return;
     const isSet = !!state.key, n = state.models.length;
     slot.className = "apiwrap";
     slot.innerHTML =
-      `<a href="/models" class="apibtn ${isSet ? "set" : ""}" title="Set your API key and custom models">`
+      `<button class="themebtn" id="mlTheme" title="Toggle light / dark"></button>`
+      + `<a href="/models" class="apibtn ${isSet ? "set" : ""}" title="Set your API key and custom models">`
       + `⚙ Models${isSet ? " ●" : ""}${n ? ` <span class="small dim">(+${n})</span>` : ""}</a>`;
+    document.getElementById("mlTheme").onclick = toggleTheme;
+    paintThemeBtn();
   }
 
   if (document.readyState === "loading")
