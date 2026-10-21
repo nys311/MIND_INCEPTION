@@ -37,6 +37,8 @@
     return `<svg viewBox="0 0 ${W} ${H}" width="100%" style="max-width:660px;font-family:var(--mono)">${g}`
       + `<text x="8" y="${H - 8}" fill="var(--svg-mut)" font-size="10.5">${esc(caption)}</text></svg>`;
   }
+  let VOTE = [];                               // the actual vote panel (model ids)
+  const shortModel = m => (m || "").split("/").pop();
   function methodDiagram(id) {
     const m = MECH[id] || MECH.none, W = 640, H = 120, y = 44;
     const col = f => FAMCOL[f] || "var(--svg-bd)";
@@ -51,11 +53,14 @@
       return wrapSvg(g, m.caption, W, H);
     }
     if (m.vote) {
-      g += `<path d="M${x},${y + 17} L${x + 50},${y - 10}" stroke="var(--svg-arrow)" stroke-width="2"/><path d="M${x},${y + 17} L${x + 50},${y + 17}" stroke="var(--svg-arrow)" stroke-width="2"/><path d="M${x},${y + 17} L${x + 50},${y + 44}" stroke="var(--svg-arrow)" stroke-width="2"/>`;
-      g += dbox(x + 52, y - 24, 110, 26, "LRM A") + dbox(x + 52, y + 4, 110, 26, "LRM B") + dbox(x + 52, y + 32, 110, 26, "LRM C");
-      g += darr(x + 162, x + 230, y + 17) + dbox(x + 232, y, 140, 34, "majority / escalate", "var(--clean-bg)", "var(--clean-bd)");
-      g += darr(x + 372, x + 440, y + 17) + dbox(x + 440, y, 100, 34, "Verdict");
-      return wrapSvg(g, m.caption, W, H);
+      const names = [0, 1, 2].map(i => VOTE[i] ? shortModel(VOTE[i]) : ["LRM A", "LRM B", "LRM C"][i]);
+      const bx = 180, bw = 176;
+      g += `<path d="M${x},${y + 17} L${bx - 4},${y - 13}" stroke="var(--svg-arrow)" stroke-width="2"/><path d="M${x},${y + 17} L${bx - 4},${y + 17}" stroke="var(--svg-arrow)" stroke-width="2"/><path d="M${x},${y + 17} L${bx - 4},${y + 47}" stroke="var(--svg-arrow)" stroke-width="2"/>`;
+      g += dbox(bx, y - 26, bw, 24, names[0]) + dbox(bx, y + 4, bw, 24, names[1]) + dbox(bx, y + 34, bw, 24, names[2]);
+      const mx = bx + bw;
+      g += darr(mx, mx + 58, y + 17) + dbox(mx + 60, y, 128, 34, "majority vote", "var(--clean-bg)", "var(--clean-bd)", "escalate on tie");
+      g += darr(mx + 188, mx + 246, y + 17) + dbox(mx + 248, y, 80, 34, "Verdict");
+      return wrapSvg(g, m.caption, 740, H);
     }
     (m.stages || []).forEach(st => { g += darr(x, x + 56, y + 17); x += 56; g += dbox(x, y - 2, 132, 42, st[0], fillFor(st[1]), col(st[1])); x += 132; });
     g += darr(x, x + 56, y + 17); x += 56; g += dbox(x, y, 96, 34, "LRM"); x += 96;
@@ -66,7 +71,8 @@
   }
 
   // Render the name list + detail panel into the given elements.
-  function renderMaster(namesEl, detailEl, strategies, families, byId) {
+  function renderMaster(namesEl, detailEl, strategies, families, byId, voteModels) {
+    VOTE = voteModels || VOTE || [];
     const $$ = (s, r) => [...(r || document).querySelectorAll(s)];
     namesEl.innerHTML = families.map(fam => {
       const items = strategies.filter(s => s.family === fam);
@@ -95,10 +101,13 @@
         <div class="muted small" style="margin:6px 0 4px">${esc(s.desc || "")}</div>
         <div class="hint" style="margin-bottom:8px">expected: ${esc(s.expect || "")}</div>
         <div class="card" style="margin:0;background:var(--panel3)">${methodDiagram(id)}</div>
+        ${id === "nmodel_vote" && VOTE.length ? `<div class="small" style="margin-top:8px"><b class="muted">Vote panel:</b> ${VOTE.map(m => `<span class="pill mono">${esc(m)}</span>`).join(" ")}</div>` : ""}
         <div class="small" style="margin-top:10px">${stat}</div>`;
     }
     $$(".mname", namesEl).forEach(el => el.onclick = () => show(el.dataset.id));
-    if (strategies[0]) show(strategies[0].id);
+    let init = strategies[0] && strategies[0].id;
+    try { const q = new URLSearchParams(location.search).get("method"); if (q && strategies.some(s => s.id === q)) init = q; } catch {}
+    if (init) show(init);
   }
 
   window.DefMethods = { methodDiagram, renderMaster };

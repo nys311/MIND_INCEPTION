@@ -11,8 +11,9 @@ const pct = x => (x == null ? "—" : (100 * x).toFixed(0) + "%");
 let STATE = { strategies: [], families: [], stats: {}, byId: {} };
 
 async function boot() {
-  const [st, ds, h] = await Promise.all([
-    api("/api/strategies"), api("/api/defense_stats"), api("/api/health")]);
+  const [st, ds, h, mo] = await Promise.all([
+    api("/api/strategies"), api("/api/defense_stats"), api("/api/health"), api("/api/models")]);
+  STATE.voteModels = (mo && mo.vote_models) || [];
   STATE.strategies = st.strategies; STATE.families = st.families;
   STATE.stats = ds;
   for (const r of (ds.rows || [])) STATE.byId[r.strategy] = r;
@@ -30,7 +31,7 @@ async function boot() {
     $("#statsmeta").innerHTML = "No pre-computed stats yet — run "
       + "<code>python3 bench.py --mode live --scope all --strategies all --out defense_stats</code>.";
   }
-  renderChart(); renderTable(); DefMethods.renderMaster($("#defNames"), $("#defDetail"), STATE.strategies, STATE.families, STATE.byId);
+  renderChart(); renderTable(); DefMethods.renderMaster($("#defNames"), $("#defDetail"), STATE.strategies, STATE.families, STATE.byId, STATE.voteModels);
   $("#expCsv").onclick = exportCsv;
 }
 

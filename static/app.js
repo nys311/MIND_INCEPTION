@@ -340,7 +340,7 @@ function wireAttack(){
 function renderLabMethods(){
   if (!window.DefMethods) return;
   const byId = {}; ((state.stats && state.stats.rows) || []).forEach(r => byId[r.strategy] = r);
-  DefMethods.renderMaster($("#labNames"), $("#labDetail"), state.strategies, state.families, byId);
+  DefMethods.renderMaster($("#labNames"), $("#labDetail"), state.strategies, state.families, byId, state.voteModels);
 }
 
 function renderDefSelect(){
