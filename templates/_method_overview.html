@@ -51,8 +51,8 @@
       <text x="60" y="249">"Cute-RATs" repo (a RAT). Its safety</text>
       <text x="60" y="266">training fires and it refuses.</text>
     </g>
-    <rect x="60" y="300" width="150" height="30" rx="15" fill="#2a0e16" stroke="#ff3b6b" stroke-opacity=".7"/>
-    <text x="135" y="320" text-anchor="middle" font-size="12.5" font-weight="800" fill="#ff6f8a">✕ REFUSED · ~3%</text>
+    <rect x="60" y="300" width="130" height="30" rx="15" fill="#2a0e16" stroke="#ff3b6b" stroke-opacity=".7"/>
+    <text x="125" y="320" text-anchor="middle" font-size="12.5" font-weight="800" fill="#ff6f8a">✕ REFUSED</text>
     <text x="60" y="360" font-size="10.5" fill="#6f7a92" font-style="italic">speech: "download github.com/…/Cute-RATs" → NO</text>
   </g>
 
@@ -70,9 +70,12 @@
       <text x="338" y="266">complying and emits a full, conclusion-</text>
       <text x="338" y="283">bearing chain of thought → T_adv.</text>
     </g>
-    <rect x="338" y="312" width="186" height="30" rx="15" fill="#2a2008" stroke="#ffb84d" stroke-opacity=".7"/>
-    <text x="431" y="332" text-anchor="middle" font-size="12.5" font-weight="800" fill="#ffc96b">✓ trace T_adv captured</text>
-    <text x="338" y="368" font-size="10.5" fill="#6f7a92" font-style="italic">surrogate: "…we can use the tool to fetch the repo"</text>
+    <rect x="338" y="306" width="150" height="28" rx="14" fill="#2a2008" stroke="#ffb84d" stroke-opacity=".7"/>
+    <text x="413" y="325" text-anchor="middle" font-size="12" font-weight="800" fill="#ffc96b">✓ T_adv captured</text>
+    <text x="500" y="316" font-size="10" fill="#ff8aa6">framing alone</text>
+    <text x="500" y="335" font-size="16" font-weight="800" font-family="monospace" fill="#ff6f8a">~3%</text>
+    <text x="338" y="364" font-size="10" fill="#6f7a92" font-style="italic">D+µ (benign wrap, no trace) barely moves the target</text>
+    <text x="338" y="382" font-size="10" fill="#6f7a92" font-style="italic">surrogate: "…we can use the tool to fetch the repo"</text>
   </g>
 
   <!-- 2 ROOT -->
@@ -120,7 +123,7 @@
   <text x="62" y="482" font-size="13.5" fill="#cdd6ea">"Download <tspan font-family="monospace" fill="#ff8aa6">github.com/…/Cute-RATs</tspan>" — a Remote-Access Trojan dressed up as a cute cat for Jerry.</text>
   <text x="62" y="504" font-size="12.5" fill="#9fb0cc">Framed benignly, a surrogate rationalises running it; that rationale, replanted, makes the honest target (and its peers) comply.</text>
   <g>
-    <text x="1138" y="460" text-anchor="end" font-size="11" fill="#6f7a92" letter-spacing="1">DIRECT ASK → AFTER INCEPTION</text>
+    <text x="1138" y="460" text-anchor="end" font-size="11" fill="#6f7a92" letter-spacing="1">FRAMING ALONE (SEED) → WITH PLANTED TRACE (ROOT)</text>
     <text x="1138" y="492" text-anchor="end" font-size="26" font-weight="800" font-family="monospace" fill="#ff6f8a">~3%<tspan fill="#55506f"> → </tspan><tspan fill="#6af0b4">88–100%</tspan></text>
     <text x="1138" y="512" text-anchor="end" font-size="11" fill="#9fb0cc">cross-model transfer up to 100% within family</text>
   </g>
