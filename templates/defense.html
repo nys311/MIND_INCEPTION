@@ -8,18 +8,33 @@
 <script>try{var p=new URLSearchParams(location.search).get('theme');var t=p||localStorage.getItem('milab_theme')||(matchMedia('(prefers-color-scheme: light)').matches?'light':'dark');if(p)localStorage.setItem('milab_theme',p);document.documentElement.setAttribute('data-theme',t);}catch(e){}</script>
 </head>
 <body>
-<header>
-  <div class="brand"><span class="dot"></span> MIND INCEPTION <small>· Defense Lab</small></div>
-  <nav class="sitenav">
-    <a href="/">Dashboard</a>
-    <a href="/demo">Use Cases</a>
-    <a href="/defense" class="on">Defenses</a>
-  </nav>
-  <div id="apiSlot"></div>
-  <div class="spacer"></div>
-  <div class="health" id="health"></div>
-</header>
-
+<div class="app">
+  <aside class="sidebar">
+    <a class="logo" href="/"><span class="mark">MI</span><span>MIND INCEPTION<small>Defense Lab</small></span></a>
+    <div class="snav-group">Dashboard</div>
+    <nav class="snav">
+      <a href="/overview"><span class="ic">◆</span>Overview</a>
+      <a href="/attack"><span class="ic">⚔</span>Attack</a>
+      <a href="/lab"><span class="ic">🛡</span>Defense Lab</a>
+      <a href="/benchmark"><span class="ic">📊</span>Benchmark</a>
+    </nav>
+    <div class="snav-group">Explore</div>
+    <nav class="snav">
+      <a href="/demo"><span class="ic">▦</span>Use Cases</a>
+      <a href="/defense" class="on"><span class="ic">▥</span>Defenses</a>
+    </nav>
+    <div class="snav-group">Settings</div>
+    <nav class="snav"><a href="/models"><span class="ic">⚙</span>Models</a></nav>
+    <div class="side-foot">
+      <button class="themebtn" id="mlTheme" title="Toggle light / dark"></button>
+      <span class="health small" id="health"></span>
+    </div>
+  </aside>
+  <div class="content">
+    <div class="topbar">
+      <div class="page-title">Defenses</div>
+      <span class="spacer"></span>
+    </div>
 <main>
   <div class="card">
     <h3>Defense methods under test</h3>
@@ -52,6 +67,9 @@
     </div>
   </div>
 </main>
+  </div>
+</div>
+
 
 <script src="/static/apikit.js"></script>
 <script src="/static/defense_methods.js"></script>

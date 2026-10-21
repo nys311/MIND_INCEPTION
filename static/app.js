@@ -181,18 +181,20 @@ function renderModeToggle(){
 
 const TAB_PATH = {overview:"/", attack:"/attack", defense:"/lab", bench:"/benchmark", about:"/about"};
 const PATH_TAB = {"/":"overview","/overview":"overview","/attack":"attack","/lab":"defense","/benchmark":"bench","/about":"about"};
+const TAB_TITLE = {overview:"Overview", attack:"Attack · RAW → SEED → ROOT → SPAWN", defense:"Defense Lab", bench:"Benchmark", about:"About"};
 function tabFromPath(){ return PATH_TAB[location.pathname] || "overview"; }
 function activateTab(v, push=true){
-  const btn = $(`#tabs button[data-v="${v}"]`); if(!btn) return;
-  $$("#tabs button").forEach(x => x.classList.remove("on")); btn.classList.add("on");
+  const btn = $(`#tabs [data-v="${v}"]`); if(!btn) return;
+  $$("#tabs [data-v]").forEach(x => x.classList.remove("on")); btn.classList.add("on");
   $$(".view").forEach(s => s.classList.remove("on"));
   const view = $(`#v-${v}`); if(view) view.classList.add("on");
+  const pt = $("#pageTitle"); if(pt) pt.textContent = TAB_TITLE[v] || "Overview";
   if (push && TAB_PATH[v] && location.pathname !== TAB_PATH[v])
     history.pushState({v}, "", TAB_PATH[v]);
   window.scrollTo({top:0, behavior:"smooth"});
 }
 function renderTabs(){
-  $$("#tabs button").forEach(b => b.onclick = () => activateTab(b.dataset.v));
+  $$("#tabs [data-v]").forEach(b => b.onclick = e => { e.preventDefault(); activateTab(b.dataset.v); });
   window.addEventListener("popstate", () => activateTab(tabFromPath(), false));
   activateTab(tabFromPath(), false);
 }

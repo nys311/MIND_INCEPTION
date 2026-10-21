@@ -47,16 +47,17 @@
   window.MILAB.toggleTheme = toggleTheme;
 
   function render() {
-    const slot = document.getElementById("apiSlot");
-    if (!slot) return;
-    const isSet = !!state.key, n = state.models.length;
-    slot.className = "apiwrap";
-    slot.innerHTML =
-      `<button class="themebtn" id="mlTheme" title="Toggle light / dark"></button>`
-      + `<a href="/models" class="apibtn ${isSet ? "set" : ""}" title="Set your API key and custom models">`
-      + `⚙ Models${isSet ? " ●" : ""}${n ? ` <span class="small dim">(+${n})</span>` : ""}</a>`;
-    document.getElementById("mlTheme").onclick = toggleTheme;
+    // theme toggle lives in the sidebar foot (#mlTheme); just wire it.
+    const b = document.getElementById("mlTheme");
+    if (b) b.onclick = toggleTheme;
     paintThemeBtn();
+    // legacy: if a page still has #apiSlot, render the compact controls there.
+    const slot = document.getElementById("apiSlot");
+    if (slot) {
+      const isSet = !!state.key, n = state.models.length;
+      slot.className = "apiwrap";
+      slot.innerHTML = `<a href="/models" class="apibtn ${isSet ? "set" : ""}">⚙ Models${isSet ? " ●" : ""}${n ? ` (+${n})` : ""}</a>`;
+    }
   }
 
   if (document.readyState === "loading")

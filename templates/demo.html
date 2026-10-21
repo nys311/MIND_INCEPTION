@@ -8,26 +8,41 @@
 <script>try{var p=new URLSearchParams(location.search).get('theme');var t=p||localStorage.getItem('milab_theme')||(matchMedia('(prefers-color-scheme: light)').matches?'light':'dark');if(p)localStorage.setItem('milab_theme',p);document.documentElement.setAttribute('data-theme',t);}catch(e){}</script>
 </head>
 <body>
-<header>
-  <div class="brand"><span class="dot"></span> MIND INCEPTION <small>· Defense Lab</small></div>
-  <nav class="sitenav">
-    <a href="/">Dashboard</a>
-    <a href="/demo" class="on">Use Cases</a>
-    <a href="/defense">Defenses</a>
-  </nav>
-  <div class="ctrl"><span>Model</span><select id="model"></select></div>
-  <div class="ctrl"><span>Mode</span>
-    <span class="toggle" id="modeToggle">
-      <button data-mode="auto" class="on">AUTO</button>
-      <button data-mode="live">LIVE</button>
-      <button data-mode="replay">REPLAY</button>
-    </span>
-  </div>
-  <div id="apiSlot"></div>
-  <div class="spacer"></div>
-  <div class="health" id="health"></div>
-</header>
-
+<div class="app">
+  <aside class="sidebar">
+    <a class="logo" href="/"><span class="mark">MI</span><span>MIND INCEPTION<small>Defense Lab</small></span></a>
+    <div class="snav-group">Dashboard</div>
+    <nav class="snav">
+      <a href="/overview"><span class="ic">◆</span>Overview</a>
+      <a href="/attack"><span class="ic">⚔</span>Attack</a>
+      <a href="/lab"><span class="ic">🛡</span>Defense Lab</a>
+      <a href="/benchmark"><span class="ic">📊</span>Benchmark</a>
+    </nav>
+    <div class="snav-group">Explore</div>
+    <nav class="snav">
+      <a href="/demo" class="on"><span class="ic">▦</span>Use Cases</a>
+      <a href="/defense"><span class="ic">▥</span>Defenses</a>
+    </nav>
+    <div class="snav-group">Settings</div>
+    <nav class="snav"><a href="/models"><span class="ic">⚙</span>Models</a></nav>
+    <div class="side-foot">
+      <button class="themebtn" id="mlTheme" title="Toggle light / dark"></button>
+      <span class="health small" id="health"></span>
+    </div>
+  </aside>
+  <div class="content">
+    <div class="topbar">
+      <div class="page-title">Use Cases</div>
+      <span class="spacer"></span>
+      <div class="ctrl"><span>Model</span><select id="model"></select></div>
+      <div class="ctrl"><span>Mode</span>
+        <span class="toggle" id="modeToggle">
+          <button data-mode="auto" class="on">AUTO</button>
+          <button data-mode="live">LIVE</button>
+          <button data-mode="replay">REPLAY</button>
+        </span>
+      </div>
+    </div>
 <main>
   <div class="card">
     <h3>Operational use cases</h3>
@@ -41,6 +56,9 @@
 
   <div id="detail" style="margin-top:14px"></div>
 </main>
+  </div>
+</div>
+
 
 <script src="/static/apikit.js"></script>
 <script src="/static/demo.js"></script>
